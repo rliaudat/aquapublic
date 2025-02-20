@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "100791974111",
+    "project_id": "aqua-med",
+    "storage_bucket": "aqua-med.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:100791974111:android:cccf89ff0cec06db36916a",
+        "android_client_info": {
+          "package_name": "com.paragon.aguamed"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC_542OyhUy60AgwdQ3vSTvEcw4FVOpH14"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
