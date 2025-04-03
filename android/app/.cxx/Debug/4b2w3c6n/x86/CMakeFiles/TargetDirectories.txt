@@ -1,0 +1,2 @@
+F:/Amir Projects/AquaMed/aquapublic-main/android/app/.cxx/Debug/4b2w3c6n/x86/CMakeFiles/edit_cache.dir
+F:/Amir Projects/AquaMed/aquapublic-main/android/app/.cxx/Debug/4b2w3c6n/x86/CMakeFiles/rebuild_cache.dir

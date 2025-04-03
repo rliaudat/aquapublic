@@ -6,7 +6,9 @@ import 'package:agua_med/theme.dart';
 import 'package:agua_med/Components/Reuseable.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dio/dio.dart';
+import 'package:ephone_field/ephone_field.dart';
 import 'package:flutter/material.dart';
+import 'package:intl_phone_number_input/intl_phone_number_input.dart';
 import 'package:responsive_framework/responsive_framework.dart';
 import 'package:easy_localization/easy_localization.dart';
 import '../../loading.dart';
@@ -20,7 +22,14 @@ class SmsVerificationScreen extends StatefulWidget {
 
 class _SmsVerificationScreenState extends State<SmsVerificationScreen> {
   var phoneNumberController = TextEditingController();
+  dynamic isoCode;
+  dynamic dialCode;
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
+  bool isLoading = false;
+  PhoneNumber phoneNumber = PhoneNumber(
+      isoCode: Country.argentina.alpha2,
+      dialCode: '+${Country.argentina.dialCode}',
+      phoneNumber: '');
 
   Future<void> sendSmsOtp(String phoneNumber) async {
     String username = Env.accountSid;
@@ -28,50 +37,58 @@ class _SmsVerificationScreenState extends State<SmsVerificationScreen> {
     String basicAuth =
         'Basic ${base64Encode(utf8.encode('$username:$password'))}';
     try {
+      isLoading = true;
+      setState(() {});
       var phoneExists = await firestore
-          .collection('users')
-          .where("phone", isEqualTo: phoneNumber)
+          .collection('user')
+          .where("phoneNumber", isEqualTo: phoneNumber)
           .get();
       if (phoneExists.docs.isNotEmpty) {
-       if( phoneExists.docs.first.data()['encryptedPassword']=="active"){
-        var headers = {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'Authorization': basicAuth
-        };
-        var data = {'To': phoneNumber, 'Channel': 'sms'};
-        var dio = Dio();
-        var response = await dio.request(
-          'https://verify.twilio.com/v2/Services/${Env.sidKey}/Verifications',
-          options: Options(
-            method: 'POST',
-            headers: headers,
-          ),
-          data: data,
-        );
-        print(
-            "https://verify.twilio.com/v2/Services/${Env.sidKey}/Verifications");
-        print(response);
-
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => VerificationCodeScreen(
-              phoneNumber: phoneNumber,
+        if (phoneExists.docs.first.data()['status'] == "active") {
+          var headers = {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Authorization': basicAuth
+          };
+          var data = {'To': phoneNumber, 'Channel': 'sms'};
+          var dio = Dio();
+          var response = await dio.request(
+            'https://verify.twilio.com/v2/Services/${Env.sidKey}/Verifications',
+            options: Options(
+              method: 'POST',
+              headers: headers,
             ),
-          ),
-        );
-       }
-       else{
+            data: data,
+          );
+          print(
+              "https://verify.twilio.com/v2/Services/${Env.sidKey}/Verifications");
+          print(response);
+          isLoading = false;
+          setState(() {});
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => VerificationCodeScreen(
+                phoneNumber: phoneNumber,
+              ),
+            ),
+          );
+        } else {
+          isLoading = false;
+          setState(() {});
           showToast(context, msg: 'OtpScreen.adminApprovalMessage'.tr());
-       }
-        
+        }
 
         // Assuming a successful response, return true
         // return true;
       } else {
+        isLoading = false;
+        setState(() {});
         showToast(context, msg: 'AuthService.thisPhoneNumberDoNotExist'.tr());
       }
     } catch (error) {
+      isLoading = false;
+      setState(() {});
+      showToast(context, msg: 'AuthService.somethingWentWrong'.tr());
       // Print out error for debugging purposes
       print("Error occurred while sending OTP sms: ${error}");
       // Return false to indicate failure
@@ -142,23 +159,64 @@ class _SmsVerificationScreenState extends State<SmsVerificationScreen> {
                                 ],
                               ),
                               const SizedBox(height: 30),
-                              TextField(
-                                controller: phoneNumberController,
-                                decoration: InputDecoration(
-                                  hintText: "Phone Number",
-                                  prefixIcon:
-                                      Icon(Icons.phone, color: borderColor),
+                              Container(
+                                padding: const EdgeInsets.only(left: 12),
+                                decoration: BoxDecoration(
+                                  border: Border.all(color: borderColor),
+                                  borderRadius: BorderRadius.circular(p),
+                                ),
+                                child: InternationalPhoneNumberInput(
+                                  initialValue: phoneNumber,
+                                  autoValidateMode: AutovalidateMode.disabled,
+                                  onInputChanged: (PhoneNumber number) {
+                                    phoneNumberController.text =
+                                        number.phoneNumber!;
+                                    isoCode = number.isoCode!;
+                                    dialCode = number.dialCode!;
+                                  },
+                                  searchBoxDecoration: InputDecoration(
+                                    hintText: 'SignUpScreen.search'.tr(),
+                                  ),
+                                  selectorConfig: const SelectorConfig(
+                                    selectorType:
+                                        PhoneInputSelectorType.BOTTOM_SHEET,
+                                    leadingPadding: 0,
+                                    trailingSpace: false,
+                                    setSelectorButtonAsPrefixIcon: false,
+                                    useBottomSheetSafeArea: true,
+                                  ),
+                                  inputDecoration: InputDecoration(
+                                    hintText: 'SignUpScreen.phoneNumber'.tr(),
+                                    border: InputBorder.none,
+                                    enabledBorder: InputBorder.none,
+                                    focusedBorder: InputBorder.none,
+                                    errorBorder: InputBorder.none,
+                                    disabledBorder: InputBorder.none,
+                                    focusedErrorBorder: InputBorder.none,
+                                    contentPadding: const EdgeInsets.only(
+                                        left: 0, top: 15, bottom: 15, right: 0),
+                                  ),
                                 ),
                               ),
+                              // TextField(
+                              //   controller: phoneNumberController,
+                              //   decoration: InputDecoration(
+                              //     hintText: "Phone Number",
+                              //     prefixIcon:
+                              //         Icon(Icons.phone, color: borderColor),
+                              //   ),
+                              // ),
                               const SizedBox(height: 40),
-                              Button(
-                                height: 50,
-                                width: width(context),
-                                text: 'ForgotPasswordScreen.submit'.tr(),
-                                onPressed: () {
-                                  sendSmsOtp(phoneNumberController.text);
-                                },
-                              )
+                              isLoading == true
+                                  ? const CircularProgressIndicator()
+                                  : Button(
+                                      height: 50,
+                                      width: width(context),
+                                      text: 'ForgotPasswordScreen.submit'.tr(),
+                                      onPressed: () {
+                                        sendSmsOtp(phoneNumberController.text);
+                                      },
+                                    )
                             ],
                           ))
                         ],

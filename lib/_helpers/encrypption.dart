@@ -35,6 +35,7 @@ decryptPass({text, iv, key}) {
 }
 
 getHashKey(_) {
+  // ignore: no_wildcard_variable_uses
   var bytes = utf8.encode(_);
   var digest = sha256.convert(bytes);
   var fDigest = md5.convert(digest.bytes);

@@ -41,7 +41,8 @@ class Button extends StatelessWidget {
               color: border ?? transparentColor,
             ),
             color: color ?? primaryColor,
-            borderRadius: BorderRadius.circular(borderRadius!), // Rounded corners
+            borderRadius:
+                BorderRadius.circular(borderRadius!), // Rounded corners
           ),
           child: Center(
             child: Text(
@@ -86,7 +87,13 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final VoidCallback? onTap;
   final bool showButton;
 
-  const CustomAppBar({super.key, required this.title, this.showAction = true, this.showButton = true, this.icon, this.onTap});
+  const CustomAppBar(
+      {super.key,
+      required this.title,
+      this.showAction = true,
+      this.showButton = true,
+      this.icon,
+      this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -96,7 +103,10 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
       automaticallyImplyLeading: showButton,
       actions: showAction
           ? [
-              Padding(padding: EdgeInsets.only(right: p), child: GestureDetector(onTap: onTap, child: Icon(icon, color: whiteColor))),
+              Padding(
+                  padding: EdgeInsets.only(right: p),
+                  child: GestureDetector(
+                      onTap: onTap, child: Icon(icon, color: whiteColor))),
             ]
           : null,
     );
@@ -174,7 +184,8 @@ class DrawerTiles extends StatelessWidget {
                 ],
               ),
               Container(),
-              Icon(Icons.arrow_forward_ios_outlined, size: 18, color: selected! ? primaryColor : borderColor),
+              Icon(Icons.arrow_forward_ios_outlined,
+                  size: 18, color: selected! ? primaryColor : borderColor),
             ],
           ),
         ),
@@ -256,7 +267,8 @@ class AdminAppBar extends StatelessWidget implements PreferredSizeWidget {
       title: Text(title),
       leading: showButton
           ? GestureDetector(
-              onTap: () => Navigator.pushReplacementNamed(context, '/adminHome'),
+              onTap: () =>
+                  Navigator.pushReplacementNamed(context, '/adminHome'),
               child: Icon(
                 Icons.arrow_back_outlined,
                 color: whiteColor,
@@ -282,10 +294,12 @@ class CustomFloatingActionButton extends StatefulWidget {
   });
 
   @override
-  _CustomFloatingActionButtonState createState() => _CustomFloatingActionButtonState();
+  _CustomFloatingActionButtonState createState() =>
+      _CustomFloatingActionButtonState();
 }
 
-class _CustomFloatingActionButtonState extends State<CustomFloatingActionButton> with SingleTickerProviderStateMixin {
+class _CustomFloatingActionButtonState extends State<CustomFloatingActionButton>
+    with SingleTickerProviderStateMixin {
   Animation<double>? _animation;
   AnimationController? _animationController;
 
@@ -297,7 +311,8 @@ class _CustomFloatingActionButtonState extends State<CustomFloatingActionButton>
       duration: const Duration(milliseconds: 260),
     );
 
-    final curvedAnimation = CurvedAnimation(curve: Curves.easeInOut, parent: _animationController!);
+    final curvedAnimation =
+        CurvedAnimation(curve: Curves.easeInOut, parent: _animationController!);
     _animation = Tween<double>(begin: 0, end: 1).animate(curvedAnimation);
   }
 
@@ -311,7 +326,9 @@ class _CustomFloatingActionButtonState extends State<CustomFloatingActionButton>
   Widget build(BuildContext context) {
     return FloatingActionBubble(
       animation: _animation!,
-      onPress: () => _animationController!.isCompleted ? _animationController!.reverse() : _animationController!.forward(),
+      onPress: () => _animationController!.isCompleted
+          ? _animationController!.reverse()
+          : _animationController!.forward(),
       iconData: widget.iconData,
       iconColor: whiteColor,
       backGroundColor: primaryColor,
@@ -356,7 +373,9 @@ class WebHeader extends StatelessWidget {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(100),
             border: Border.all(
-              color: selectedIndex == index ? Colors.transparent : unselectedTextColor,
+              color: selectedIndex == index
+                  ? Colors.transparent
+                  : unselectedTextColor,
             ),
             color: selectedIndex == index ? selectedColor : unselectedColor,
           ),
@@ -365,8 +384,11 @@ class WebHeader extends StatelessWidget {
               title,
               style: TextStyle(
                 fontSize: 14,
-                color: selectedIndex == index ? selectedTextColor : unselectedTextColor,
-                fontWeight: selectedIndex == index ? FontWeight.bold : FontWeight.w400,
+                color: selectedIndex == index
+                    ? selectedTextColor
+                    : unselectedTextColor,
+                fontWeight:
+                    selectedIndex == index ? FontWeight.bold : FontWeight.w400,
               ),
             ),
           ),
@@ -411,7 +433,7 @@ class AdminDashBoard extends StatelessWidget {
             ),
             Container(
               height: 78,
-              width: 215,
+              width: 225,
               decoration: BoxDecoration(
                 color: greyColor,
                 borderRadius: BorderRadius.only(
@@ -443,7 +465,11 @@ class AdminDashBoard extends StatelessWidget {
                             ),
                             Text(
                               total,
-                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24, color: darkGreyColor, height: 1),
+                              style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 24,
+                                  color: darkGreyColor,
+                                  height: 1),
                             ),
                           ],
                         ),

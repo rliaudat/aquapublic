@@ -126,6 +126,7 @@
         "alert": "Alert!",
         "areYouSureToRegisterThisUserForAguaMed": "Are you sure to register this user for AguaMed?",
         "cancel": "cancel",
+        "confirm": "confirm",
         "accept": "Accept",
         "close": "Close"
     },
@@ -326,7 +327,9 @@
     },
     "MeterScanCameraScreen": {
         "ocrCamera": "OCR Camera",
-        "captureAndProcess": "Capture and Process",
+        "capture": "Capture",
+        "process": "Process",
+        "retake": "Retake",
         "failedToExtractText": "Failed to extract text: ",
         "unableToDecodeImage": "Unable to decode image",
         "failedToUploadImage": "Failed to upload image: "
@@ -450,7 +453,8 @@
         "capturedReading": "Captured Reading",
         "newReading": "New Reading",
         "readingHasBeenRecorded": "Reading has been recorded for house {house} in town {town}",
-        "readingShouldBeGreaterThanThePreviousReading": "Reading should be greater than the previous reading"
+        "readingShouldBeGreaterThanThePreviousReading": "Reading should be greater than the previous reading",
+        "lessConsumptionPopup": "Warning! you are entering a consumption value that is less than last consumption registreation. Please Enter explanation and confirm"
     },
     "UserFilterBottomSheet": {
         "filter": "Filter",

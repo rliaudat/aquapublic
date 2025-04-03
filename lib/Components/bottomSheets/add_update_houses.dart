@@ -1,3 +1,5 @@
+import 'package:agua_med/_services/house_services.dart';
+import 'package:agua_med/models/house.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
@@ -46,7 +48,7 @@ class _AddUpdateHousesState extends State<AddUpdateHouses> {
     var obj = {'name': house.text};
     try {
       showLoader(context, 'AddUpdateHouses.justAMoment'.tr());
-      firestore.collection('towns').doc(widget.townId).collection('houses').doc(widget.houseId).update(obj);
+      HouseServices.update(widget.houseId!, obj);
       pop(context);
       pop(context);
       showToast(context, msg: 'AddUpdateHouses.houseUpdatedSuccessfully'.tr());
@@ -56,10 +58,20 @@ class _AddUpdateHousesState extends State<AddUpdateHouses> {
   }
 
   doCreate() async {
-    var obj = {'name': house.text, 'createdAt': FieldValue.serverTimestamp(), 'isDelete': false};
     try {
       showLoader(context, 'AddUpdateHouses.justAMoment'.tr());
-      await firestore.collection('towns').doc(widget.townId).collection('houses').doc().set(obj);
+      HouseServices.create(
+        context,
+        House(
+          id: '',
+          name: house.text,
+          townID: widget.townId,
+          isDelete: false,
+          lastReading: null,
+          createdAt: Timestamp.now(),
+          updatedAt: Timestamp.now(),
+        ),
+      );
       pop(context);
       pop(context);
       showToast(context, msg: 'AddUpdateHouses.houseAddedSuccessfully'.tr());
@@ -68,22 +80,33 @@ class _AddUpdateHousesState extends State<AddUpdateHouses> {
     }
   }
 
-  addOrUpdateHouse() async {
-    if (house.text.isNotEmpty) {
-      final townQuery = await FirebaseFirestore.instance.collection('towns').where('name', isEqualTo: town.text).get();
+  // addOrUpdateHouse() async {
+  //   if (house.text.isNotEmpty) {
+  //     final townQuery = await FirebaseFirestore.instance
+  //         .collection('towns')
+  //         .where('name', isEqualTo: town.text)
+  //         .get();
 
-      if (townQuery.docs.isNotEmpty) {
-        final townDoc = townQuery.docs.first;
+  //     if (townQuery.docs.isNotEmpty) {
+  //       final townDoc = townQuery.docs.first;
 
-        final houseRef = widget.houseId != null ? townDoc.reference.collection('houses').doc(widget.houseId) : townDoc.reference.collection('houses').doc();
+  //       final houseRef = widget.houseId != null
+  //           ? townDoc.reference.collection('houses').doc(widget.houseId)
+  //           : townDoc.reference.collection('houses').doc();
 
-        await houseRef.set({'name': house.text, 'createdAt': FieldValue.serverTimestamp(), 'isDelete': false});
+  //       await houseRef.set({
+  //         'name': house.text,
+  //         'createdAt': FieldValue.serverTimestamp(),
+  //         'isDelete': false
+  //       });
 
-        pop(context);
-        showToast(context, msg: 'AddUpdateHouses.houseAndReadingAddedUpdatedSuccessfully'.tr(), duration: 3);
-      }
-    }
-  }
+  //       pop(context);
+  //       showToast(context,
+  //           msg: 'AddUpdateHouses.houseAndReadingAddedUpdatedSuccessfully'.tr(),
+  //           duration: 3);
+  //     }
+  //   }
+  // }
 
   @override
   void initState() {
@@ -119,7 +142,9 @@ class _AddUpdateHousesState extends State<AddUpdateHouses> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        widget.houseId == null ? 'AddUpdateHouses.addHouse'.tr() : 'AddUpdateHouses.editHouse'.tr(),
+                        widget.houseId == null
+                            ? 'AddUpdateHouses.addHouse'.tr()
+                            : 'AddUpdateHouses.editHouse'.tr(),
                         style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
@@ -127,7 +152,8 @@ class _AddUpdateHousesState extends State<AddUpdateHouses> {
                       ),
                       GestureDetector(
                         onTap: () => Navigator.pop(context),
-                        child: const Icon(Icons.close_outlined, color: Colors.black),
+                        child: const Icon(Icons.close_outlined,
+                            color: Colors.black),
                       ),
                     ],
                   ),
@@ -167,7 +193,9 @@ class _AddUpdateHousesState extends State<AddUpdateHouses> {
                       color: addHover ? primaryColor : secondaryColor,
                       height: 50,
                       width: double.infinity,
-                      text: widget.houseId == null ? 'AddUpdateHouses.add'.tr() : 'AddUpdateHouses.update'.tr(),
+                      text: widget.houseId == null
+                          ? 'AddUpdateHouses.add'.tr()
+                          : 'AddUpdateHouses.update'.tr(),
                       onPressed: () => goAuth(),
                     ),
                   ),

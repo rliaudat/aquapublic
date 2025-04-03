@@ -1,5 +1,5 @@
 import 'package:agua_med/_helpers/global.dart';
-import 'package:agua_med/_services/auth_Services.dart';
+import 'package:agua_med/_services/auth_services.dart';
 import 'package:agua_med/_services/storage.dart';
 import 'package:agua_med/theme.dart';
 import 'package:agua_med/Components/Reuseable.dart';
@@ -23,7 +23,12 @@ class OtpScreen extends StatefulWidget {
   final dynamic user;
   final String platform;
   final String token;
-  const OtpScreen({super.key, required this.verificationId, required this.user, required this.platform, required this.token});
+  const OtpScreen(
+      {super.key,
+      required this.verificationId,
+      required this.user,
+      required this.platform,
+      required this.token});
 
   @override
   State<OtpScreen> createState() => _OtpScreenState();
@@ -43,9 +48,13 @@ class _OtpScreenState extends State<OtpScreen> {
       verificationId: widget.verificationId,
       otp: otp,
       onVerified: (userCredential) async {
-        if (mounted) showToast(context, msg: "OtpScreen.otpVerifiedSuccess".tr());
+        if (mounted)
+          showToast(context, msg: "OtpScreen.otpVerifiedSuccess".tr());
         var id = userCredential.user?.uid;
-        await FirebaseFirestore.instance.collection('users').doc(id).update({'platform': widget.platform, 'fcm_token': widget.token});
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(id)
+            .update({'platform': widget.platform, 'fcmToken': widget.token});
         goNext(widget.user);
       },
       onVerificationFailed: (error) {
@@ -58,7 +67,10 @@ class _OtpScreenState extends State<OtpScreen> {
     String userStatus = user['status'];
     if (userStatus == 'pending') {
       showToast(context, msg: 'OtpScreen.adminApprovalMessage'.tr());
-      Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => const LandingPage()), (route) => false);
+      Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => const LandingPage()),
+          (route) => false);
       return;
     }
     userSD = user.data();
@@ -66,13 +78,25 @@ class _OtpScreenState extends State<OtpScreen> {
 
     await Storage.setLogin(userSD);
     if (userSD['role'] == 'Manager') {
-      Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => const ManagerHomeScreen()), (route) => false);
+      Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => const ManagerHomeScreen()),
+          (route) => false);
     } else if (userSD['role'] == 'Inspector') {
-      Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => const InspectorHomeScreen()), (route) => false);
+      Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => const InspectorHomeScreen()),
+          (route) => false);
     } else if (userSD['role'] == 'HouseOwner') {
-      Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => const HomeScreen()), (route) => false);
+      Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => const HomeScreen()),
+          (route) => false);
     } else if (userSD['role'] == 'Admin') {
-      Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => const AdminHomeScreen()), (route) => false);
+      Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => const AdminHomeScreen()),
+          (route) => false);
     }
   }
 
@@ -84,7 +108,8 @@ class _OtpScreenState extends State<OtpScreen> {
       child: Scaffold(
         appBar: AppBar(
           leading: const backButton(),
-          title: Text('OtpScreen.otpScreenTitle'.tr(), style: TextStyle(color: blackColor)),
+          title: Text('OtpScreen.otpScreenTitle'.tr(),
+              style: TextStyle(color: blackColor)),
         ),
         body: Padding(
           padding: EdgeInsets.symmetric(horizontal: p),
@@ -127,8 +152,10 @@ class _OtpScreenState extends State<OtpScreen> {
                                   length: 6,
                                   width: width(context),
                                   fieldWidth: 48,
-                                  contentPadding: const EdgeInsets.symmetric(vertical: 18),
-                                  textFieldAlignment: MainAxisAlignment.spaceAround,
+                                  contentPadding:
+                                      const EdgeInsets.symmetric(vertical: 18),
+                                  textFieldAlignment:
+                                      MainAxisAlignment.spaceAround,
                                   fieldStyle: FieldStyle.box,
                                   otpFieldStyle: OtpFieldStyle(
                                     borderColor: borderColor,
@@ -149,7 +176,8 @@ class _OtpScreenState extends State<OtpScreen> {
                                   child: RichText(
                                     text: TextSpan(
                                       text: 'OtpScreen.waitMessage'.tr(),
-                                      style: TextStyle(color: borderColor, fontSize: 11),
+                                      style: TextStyle(
+                                          color: borderColor, fontSize: 11),
                                       children: [
                                         TextSpan(
                                           text: 'OtpScreen.sendAgain'.tr(),

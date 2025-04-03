@@ -1,3 +1,5 @@
+import 'package:agua_med/_services/town_services.dart';
+import 'package:agua_med/models/town.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
@@ -9,7 +11,8 @@ class AddUpdateTown extends StatefulWidget {
   final String? townId;
   final String? townName;
   final String? townUnitPrice;
-  const AddUpdateTown({super.key, this.townId, this.townName, this.townUnitPrice});
+  const AddUpdateTown(
+      {super.key, this.townId, this.townName, this.townUnitPrice});
 
   @override
   State<AddUpdateTown> createState() => _AddUpdateTownState();
@@ -27,30 +30,43 @@ class _AddUpdateTownState extends State<AddUpdateTown> {
 
     if (townController.text.isEmpty || townUnitPriceController.text.isEmpty) {
       if (townController.text.isEmpty) {
-        showToast(context, msg: 'AddUpdateTown.pleaseEnterTownName'.tr(), duration: 3);
+        showToast(context,
+            msg: 'AddUpdateTown.pleaseEnterTownName'.tr(), duration: 3);
       } else if (townUnitPriceController.text.isEmpty) {
-        showToast(context, msg: 'AddUpdateTown.pleaseEnterPerUnitPrice'.tr(), duration: 3);
+        showToast(context,
+            msg: 'AddUpdateTown.pleaseEnterPerUnitPrice'.tr(), duration: 3);
       }
     } else {
       if (townId != null) {
-        await firestore.collection('towns').doc(townId).update({
-          'name': townController.text,
-          'unitPrice': townUnitPriceController.text,
-          'updatedAt': FieldValue.serverTimestamp(),
-        });
+        TownServices.update(
+          context,
+          townId,
+          {
+            'name': townController.text,
+            'unitPrice': double.parse(townUnitPriceController.text),
+            'updatedAt': FieldValue.serverTimestamp(),
+          },
+        );
         pop(context);
         townController.clear();
-        showToast(context, msg: 'AddUpdateTown.townUpdatedSuccessfully'.tr(), duration: 3);
+        showToast(context,
+            msg: 'AddUpdateTown.townUpdatedSuccessfully'.tr(), duration: 3);
       } else {
-        await firestore.collection('towns').add({
-          'name': townController.text,
-          'unitPrice': townUnitPriceController.text,
-          'createdAt': FieldValue.serverTimestamp(),
-          'isDelete': false,
-        });
+        TownServices.create(
+          context,
+          Town(
+            id: '',
+            name: townController.text,
+            unitPrice: double.parse(townUnitPriceController.text),
+            isDelete: false,
+            createdAt: Timestamp.now(),
+            updatedAt: Timestamp.now(),
+          ),
+        );
         pop(context);
         townController.clear();
-        showToast(context, msg: 'AddUpdateTown.townAddedSuccessfully'.tr(), duration: 3);
+        showToast(context,
+            msg: 'AddUpdateTown.townAddedSuccessfully'.tr(), duration: 3);
       }
     }
   }
@@ -59,7 +75,8 @@ class _AddUpdateTownState extends State<AddUpdateTown> {
   void initState() {
     super.initState();
     townController = TextEditingController(text: widget.townName ?? '');
-    townUnitPriceController = TextEditingController(text: widget.townUnitPrice ?? '');
+    townUnitPriceController =
+        TextEditingController(text: widget.townUnitPrice ?? '');
   }
 
   @override
@@ -123,7 +140,9 @@ class _AddUpdateTownState extends State<AddUpdateTown> {
                     color: townHover ? primaryColor : secondaryColor,
                     height: 45,
                     width: width(context),
-                    text: widget.townId != null ? 'AddUpdateTown.updateTown'.tr() : 'AddUpdateTown.addTown'.tr(),
+                    text: widget.townId != null
+                        ? 'AddUpdateTown.updateTown'.tr()
+                        : 'AddUpdateTown.addTown'.tr(),
                     fontSize: 14,
                     onPressed: () {
                       addTown();

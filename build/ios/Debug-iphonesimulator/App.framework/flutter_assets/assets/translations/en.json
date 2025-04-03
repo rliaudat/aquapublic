@@ -326,7 +326,9 @@
     },
     "MeterScanCameraScreen": {
         "ocrCamera": "OCR Camera",
-        "captureAndProcess": "Capture and Process",
+        "capture": "Capture",
+        "process": "Process",
+        "retake": "Retake",
         "failedToExtractText": "Failed to extract text: ",
         "unableToDecodeImage": "Unable to decode image",
         "failedToUploadImage": "Failed to upload image: "

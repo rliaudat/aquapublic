@@ -14,7 +14,7 @@ class UserWebDashboardPage extends StatefulWidget {
 }
 
 class _UserWebDashboardPageState extends State<UserWebDashboardPage> {
-  List<String> townIdsList = [];
+  List<Map<String, dynamic>> towns = [];
   List<String> months = [
     "January",
     "February",
@@ -32,7 +32,7 @@ class _UserWebDashboardPageState extends State<UserWebDashboardPage> {
   List<String> years = List.generate(
       DateTime.now().year - 2019, (index) => (2020 + index).toString());
 
-  String? selectedTownId;
+  Map<String, dynamic>? selectedTown;
   String? selectedMonth;
   String? selectedYear;
   String? searchQuery = '';
@@ -89,23 +89,23 @@ class _UserWebDashboardPageState extends State<UserWebDashboardPage> {
   @override
   void initState() {
     super.initState();
-    selectedTownId = 'N7YwK26D9gtSssAwLfkE';
     selectedMonth = months[DateTime.now().month - 1];
     selectedYear = DateTime.now().year.toString();
     loadTowns();
-    loadData();
   }
 
   loadTowns() {
     isLoading = true;
     if (mounted) setState(() {});
-    firestore.collection('towns').snapshots().listen((querySnapshot) async {
-      final towns = await Future.wait(querySnapshot.docs.map((doc) async {
-        final data = doc.id;
+    firestore.collection('town').snapshots().listen((querySnapshot) async {
+      final townData = await Future.wait(querySnapshot.docs.map((doc) async {
+        final data = {'id': doc.id, 'name': doc['name']};
         return data;
       }).toList());
-      townIdsList = towns;
+      towns = townData;
+      selectedTown = towns.first;
       if (mounted) setState(() {});
+      loadData();
     }).onError((e) {
       debugPrint('Error loading data: $e');
     });
@@ -132,9 +132,8 @@ class _UserWebDashboardPageState extends State<UserWebDashboardPage> {
 
   void loadData() {
     firestore
-        .collection('towns')
-        .doc(selectedTownId)
-        .collection('houses')
+        .collection('house')
+        .where('townID', isEqualTo: selectedTown!['id'])
         .where('isDelete', isEqualTo: false)
         .orderBy('createdAt')
         .snapshots()
@@ -142,105 +141,110 @@ class _UserWebDashboardPageState extends State<UserWebDashboardPage> {
       List<Map<String, dynamic>> tempAllData = [];
       List<Map<String, dynamic>> tempTableData = [];
 
-      for (var houseDoc in housesSnapshot.docs) {
-        Map<String, dynamic> houseData = houseDoc.data();
-        houseData['id'] = houseDoc.id;
-        houseData['lastReading'] = null;
+      if (housesSnapshot.docs.isNotEmpty) {
+        for (var houseDoc in housesSnapshot.docs) {
+          Map<String, dynamic> houseData = houseDoc.data();
+          houseData['id'] = houseDoc.id;
+          houseData['lastReading'] = null;
 
-        firestore
-            .collection('towns')
-            .doc(selectedTownId)
-            .collection('houses')
-            .doc(houseDoc.id)
-            .collection('reading')
-            .orderBy('date', descending: true)
-            .limit(1)
-            .snapshots()
-            .listen((readingsSnapshot) {
-          if (readingsSnapshot.docs.isNotEmpty) {
-            houseData['lastReading'] = {
-              'id': readingsSnapshot.docs.first.id,
-              ...readingsSnapshot.docs.first.data()
-            };
-          } else {
-            houseData['lastReading'] = null;
-          }
-          tempAllData =
-              tempAllData.where((item) => item['id'] != houseDoc.id).toList();
-          tempAllData.add(houseData);
-          if (houseData['lastReading']?['date'] == null
-              ? false
-              : ((months[DateTime.fromMicrosecondsSinceEpoch(
-                            houseData['lastReading']?['date']
-                                .microsecondsSinceEpoch,
-                          ).month -
-                          1] ==
-                      selectedMonth) &&
-                  (DateTime.fromMicrosecondsSinceEpoch(
-                        houseData['lastReading']?['date']
-                            .microsecondsSinceEpoch,
-                      ).year.toString() ==
-                      selectedYear))) {
-            tempTableData.add({
-              "House ID": houseDoc.id,
-              "Month": months[DateTime.fromMicrosecondsSinceEpoch(
-                          (houseData['lastReading']?['date'] ?? Timestamp.now())
-                              .microsecondsSinceEpoch)
-                      .month -
-                  1],
-              "Water Meter ID": "M-1",
-              "Previous Reading":
-                  "${houseData['lastReading']?['previousReading'] ?? 0} m³",
-              "Previous Reading Date": "2025-01-20",
-              "Reading": "${houseData['lastReading']?['reading'] ?? 0} m³",
-              "Reading Date": houseData['lastReading']?['date'] == null
-                  ? ''
-                  : DateFormat("yyyy-MM-dd").format(
-                      DateTime.fromMicrosecondsSinceEpoch(
-                        houseData['lastReading']?['date']
-                            .microsecondsSinceEpoch,
+          firestore
+              .collection('readings')
+              .where('houseId', isEqualTo: houseData['id'])
+              .orderBy('date', descending: true)
+              .limit(1)
+              .snapshots()
+              .listen((readingsSnapshot) {
+            if (readingsSnapshot.docs.isNotEmpty) {
+              houseData['lastReading'] = {
+                'id': readingsSnapshot.docs.first.id,
+                ...readingsSnapshot.docs.first.data()
+              };
+            } else {
+              houseData['lastReading'] = null;
+            }
+            tempAllData =
+                tempAllData.where((item) => item['id'] != houseDoc.id).toList();
+            tempAllData.add(houseData);
+            if (houseData['lastReading']?['date'] == null
+                ? false
+                : ((months[DateTime.fromMicrosecondsSinceEpoch(
+                              houseData['lastReading']?['date']
+                                  .microsecondsSinceEpoch,
+                            ).month -
+                            1] ==
+                        selectedMonth) &&
+                    (DateTime.fromMicrosecondsSinceEpoch(
+                          houseData['lastReading']?['date']
+                              .microsecondsSinceEpoch,
+                        ).year.toString() ==
+                        selectedYear))) {
+              tempTableData.add({
+                "House ID": houseData['name'],
+                "Month": months[DateTime.fromMicrosecondsSinceEpoch(
+                            (houseData['lastReading']?['date'] ??
+                                    Timestamp.now())
+                                .microsecondsSinceEpoch)
+                        .month -
+                    1],
+                "Water Meter ID": "M-1",
+                "Previous Reading":
+                    "${houseData['lastReading']?['previousReading'] ?? 0} m³",
+                "Previous Reading Date": "2025-01-20",
+                "Reading": "${houseData['lastReading']?['reading'] ?? 0} m³",
+                "Reading Date": houseData['lastReading']?['date'] == null
+                    ? ''
+                    : DateFormat("yyyy-MM-dd").format(
+                        DateTime.fromMicrosecondsSinceEpoch(
+                          houseData['lastReading']?['date']
+                              .microsecondsSinceEpoch,
+                        ),
                       ),
-                    ),
-              "Days of Consumption":
-                  (houseData['lastReading']?['consumptionDays'] ?? 0)
-                      .toString(),
-              "Calculated Consumption":
-                  "${int.parse((houseData['lastReading']?['reading'] ?? 0).toString()) - int.parse((houseData['lastReading']?['previousReading'] ?? 0).toString())} m³",
-              "House Type": "House",
-              "Consumption Level": "normal",
-              "Billing Status": "closed",
-              "Measurement Status":
-                  checkReading(houseData) ? "completed" : "pending",
-              "View Image": houseData['lastReading']?['consumptionDays'],
-            });
-          } else {
-            tempTableData.add({
-              "House ID": houseDoc.id,
-              // "Month": months[DateTime.fromMicrosecondsSinceEpoch(
-              //             Timestamp.now().microsecondsSinceEpoch)
-              //         .month -
-              //     1],
-              "Month": selectedMonth,
-              "Water Meter ID": "M-1",
-              "Previous Reading":
-                  "${houseData['lastReading']?['previousReading'] ?? 0} m³",
-              "Previous Reading Date": "2025-01-20",
-              "Reading": "",
-              "Reading Date": '',
-              "Days of Consumption": '',
-              "Calculated Consumption": '',
-              "House Type": "House",
-              "Consumption Level": "normal",
-              "Billing Status": "closed",
-              "Measurement Status": "pending",
-              "View Image": null,
-            });
-          }
-          tableData = tempTableData;
-          updateRowRecords();
-          isLoading = false;
-          if (mounted) setState(() {});
-        });
+                "Days of Consumption":
+                    (houseData['lastReading']?['consumptionDays'] ?? 0)
+                        .toString(),
+                "Calculated Consumption":
+                    "${int.parse((houseData['lastReading']?['reading'] ?? 0).toString()) - int.parse((houseData['lastReading']?['previousReading'] ?? 0).toString())} m³",
+                "House Type": "House",
+                "Consumption Level": "normal",
+                "Billing Status": "closed",
+                "Measurement Status":
+                    checkReading(houseData) ? "completed" : "pending",
+                "View Image": houseData['lastReading']?['consumptionDays'],
+              });
+            } else {
+              tempTableData.add({
+                "House ID": houseData['name'],
+                // "Month": months[DateTime.fromMicrosecondsSinceEpoch(
+                //             Timestamp.now().microsecondsSinceEpoch)
+                //         .month -
+                //     1],
+                "Month": selectedMonth,
+                "Water Meter ID": "M-1",
+                "Previous Reading":
+                    "${houseData['lastReading']?['previousReading'] ?? 0} m³",
+                "Previous Reading Date": "2025-01-20",
+                "Reading": "",
+                "Reading Date": '',
+                "Days of Consumption": '',
+                "Calculated Consumption": '',
+                "House Type": "House",
+                "Consumption Level": "normal",
+                "Billing Status": "closed",
+                "Measurement Status": "pending",
+                "View Image": null,
+              });
+            }
+            tableData = tempTableData;
+            updateRowRecords();
+            isLoading = false;
+            if (mounted) setState(() {});
+          });
+        }
+      } else {
+        tableData = tempTableData;
+        updateRowRecords();
+        isLoading = false;
+        if (mounted) setState(() {});
       }
     });
   }
@@ -296,20 +300,20 @@ class _UserWebDashboardPageState extends State<UserWebDashboardPage> {
                                   ),
                                 ),
                               ),
-                              items: townIdsList.map((String townID) {
+                              items: towns.map((Map<String, dynamic> town) {
                                 return DropdownMenuItem(
-                                  value: townID,
+                                  value: town,
                                   child: Text(
-                                    townID,
+                                    town['name'],
                                   ),
                                 );
                               }).toList(),
                               selectedItemBuilder: (BuildContext context) {
-                                return townIdsList.map((String townID) {
+                                return towns.map((Map<String, dynamic> town) {
                                   return SizedBox(
                                     width: 120, // Adjust width as needed
                                     child: Text(
-                                      townID,
+                                      town['name'],
                                       overflow: TextOverflow.ellipsis,
                                       softWrap: false,
                                     ),
@@ -317,12 +321,12 @@ class _UserWebDashboardPageState extends State<UserWebDashboardPage> {
                                 }).toList();
                               },
                               onChanged: (value) {
-                                loadData();
                                 setState(() {
-                                  selectedTownId = value as String;
+                                  selectedTown = value;
                                 });
+                                loadData();
                               },
-                              value: selectedTownId,
+                              value: selectedTown,
                             ),
                           ),
                         ),
@@ -409,8 +413,8 @@ class _UserWebDashboardPageState extends State<UserWebDashboardPage> {
                                   ),
                                 ),
                               ),
-                              items:
-                                  ["Living", "Weekend", "All"].map((String houseType) {
+                              items: ["Living", "Weekend", "All"]
+                                  .map((String houseType) {
                                 return DropdownMenuItem(
                                   value: houseType,
                                   child: Text(houseType),
@@ -442,7 +446,7 @@ class _UserWebDashboardPageState extends State<UserWebDashboardPage> {
                                   ),
                                 ),
                               ),
-                              items: ["Normal", "Medium", "High","All"]
+                              items: ["Normal", "Medium", "High", "All"]
                                   .map((String consumptionFilter) {
                                 return DropdownMenuItem(
                                   value: consumptionFilter,
@@ -568,7 +572,7 @@ class _UserWebDashboardPageState extends State<UserWebDashboardPage> {
                             ),
                             const SizedBox(width: 20),
                             Text(
-                              '${((currentPage - 1) * rowsPerPage) + 1} - ${((tableData.length - ((currentPage - 1) * rowsPerPage)) < rowsPerPage ? tableData.length : ((currentPage - 1) * rowsPerPage) + rowsPerPage)} of ${tableData.length}',
+                              '${((currentPage - 1) * rowsPerPage) + (tableData.isEmpty ? 0 : 1)} - ${((tableData.length - ((currentPage - 1) * rowsPerPage)) < rowsPerPage ? tableData.length : ((currentPage - 1) * rowsPerPage) + rowsPerPage)} of ${tableData.length}',
                               style: const TextStyle(
                                 fontSize: 12,
                               ),
@@ -614,79 +618,87 @@ class _UserWebDashboardPageState extends State<UserWebDashboardPage> {
                       ],
                     ),
                     const SizedBox(height: 20),
-                    Expanded(
-                      child: SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
+                    if (tableData.isNotEmpty)
+                      Expanded(
                         child: SingleChildScrollView(
-                          scrollDirection: Axis.vertical,
-                          child: DataTable(
-                            headingRowColor:
-                                WidgetStateProperty.all(primaryColor),
-                            columnSpacing: 10,
-                            columns: tableData.first.keys
-                                .map(
-                                  (key) => DataColumn(
-                                    label: Center(
-                                      child: SizedBox(
-                                        width: 140,
-                                        child: Text(
-                                          key,
-                                          style: TextStyle(
-                                            fontSize: 11,
-                                            color: whiteColor,
-                                            fontWeight: FontWeight.w600,
+                          scrollDirection: Axis.horizontal,
+                          child: SingleChildScrollView(
+                            scrollDirection: Axis.vertical,
+                            child: DataTable(
+                              headingRowColor:
+                                  WidgetStateProperty.all(primaryColor),
+                              columnSpacing: 2,
+                              columns: tableData.first.keys
+                                  .map(
+                                    (key) => DataColumn(
+                                      label: Center(
+                                        child: SizedBox(
+                                          width: MediaQuery.of(context)
+                                                  .size
+                                                  .width *
+                                              .05,
+                                          child: Text(
+                                            key,
+                                            style: TextStyle(
+                                              fontSize: 11,
+                                              color: whiteColor,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                            softWrap: true,
+                                            overflow: TextOverflow.visible,
+                                            textAlign: TextAlign.center,
                                           ),
-                                          softWrap: true,
-                                          overflow: TextOverflow.visible,
-                                          textAlign: TextAlign.center,
                                         ),
                                       ),
                                     ),
-                                  ),
-                                )
-                                .toList(),
-                            rows: rowData
-                                .where((row) =>
-                                    row["House ID"].contains(searchQuery))
-                                .map((row) => DataRow(
-                                      cells: row.entries
-                                          .map(
-                                            (entry) => DataCell(SizedBox(
-                                              width: 140,
-                                              child: entry.key == 'View Image'
-                                                  ? entry.value == null
-                                                      ? const Text('')
-                                                      : IconButton(
-                                                          onPressed: () async {
-                                                            !await launchUrl(
-                                                              Uri.parse(
-                                                                entry.value
-                                                                    .toString(),
-                                                              ),
-                                                            );
-                                                          },
-                                                          icon: const Icon(
-                                                              Icons.image),
-                                                        )
-                                                  : Text(
-                                                      entry.value.toString(),
-                                                      style: const TextStyle(
-                                                          fontSize: 11),
-                                                      softWrap: true,
-                                                      overflow:
-                                                          TextOverflow.visible,
-                                                      textAlign:
-                                                          TextAlign.center,
-                                                    ),
-                                            )),
-                                          )
-                                          .toList(),
-                                    ))
-                                .toList(),
+                                  )
+                                  .toList(),
+                              rows: rowData
+                                  .where((row) =>
+                                      row["House ID"].contains(searchQuery))
+                                  .map((row) => DataRow(
+                                        cells: row.entries
+                                            .map(
+                                              (entry) => DataCell(SizedBox(
+                                                width: MediaQuery.of(context)
+                                                        .size
+                                                        .width *
+                                                    .05,
+                                                child: entry.key == 'View Image'
+                                                    ? entry.value == null
+                                                        ? const Text('')
+                                                        : IconButton(
+                                                            onPressed:
+                                                                () async {
+                                                              !await launchUrl(
+                                                                Uri.parse(
+                                                                  entry.value
+                                                                      .toString(),
+                                                                ),
+                                                              );
+                                                            },
+                                                            icon: const Icon(
+                                                                Icons.image),
+                                                          )
+                                                    : Text(
+                                                        entry.value.toString(),
+                                                        style: const TextStyle(
+                                                            fontSize: 11),
+                                                        softWrap: true,
+                                                        overflow: TextOverflow
+                                                            .visible,
+                                                        textAlign:
+                                                            TextAlign.center,
+                                                      ),
+                                              )),
+                                            )
+                                            .toList(),
+                                      ))
+                                  .toList(),
+                            ),
                           ),
                         ),
                       ),
-                    ),
                   ],
                 ),
               ),

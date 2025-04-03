@@ -126,6 +126,7 @@
         "alert": "¡Alerta!",
         "areYouSureToRegisterThisUserForAguaMed": "¿Estás seguro de registrar a este usuario en AguaMed?",
         "cancel": "Cancelar",
+        "confirm": "confirmar",
         "accept": "Aceptar",
         "close": "Cerrar"
     },
@@ -326,7 +327,9 @@
     },
     "MeterScanCameraScreen": {
         "ocrCamera": "Cámara OCR",
-        "captureAndProcess": "Capturar y procesar",
+        "capture": "Capturar",
+        "process": "Procesar",
+        "retake": "Volver a tomar",
         "failedToExtractText": "No se pudo extraer el texto: ",
         "unableToDecodeImage": "No se pudo decodificar la imagen",
         "failedToUploadImage": "Error al subir la imagen: "
@@ -450,7 +453,8 @@
         "capturedReading": "Lectura capturada",
         "newReading": "Nueva lectura",
         "readingHasBeenRecorded": "La lectura ha sido registrada para el lote {lote} en el barrio {barrio}",
-        "readingShouldBeGreaterThanThePreviousReading": "La lectura debe ser mayor que la lectura anterior"
+        "readingShouldBeGreaterThanThePreviousReading": "La lectura debe ser mayor que la lectura anterior",
+        "lessConsumptionPopup": "¡Advertencia! Está ingresando un valor de consumo inferior al último registro. Por favor, introduzca una explicación y confirme"
     },
     "UserFilterBottomSheet": {
         "filter": "Filtrar",

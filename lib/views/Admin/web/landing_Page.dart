@@ -56,9 +56,11 @@ class _LandingPageState extends State<LandingPage> {
 
     if (scrollPosition >= section1Offset && scrollPosition < section2Offset) {
       updateSelectedIndex(0);
-    } else if (scrollPosition >= section2Offset && scrollPosition < section3Offset) {
+    } else if (scrollPosition >= section2Offset &&
+        scrollPosition < section3Offset) {
       updateSelectedIndex(1);
-    } else if (scrollPosition >= section3Offset && scrollPosition < section4Offset) {
+    } else if (scrollPosition >= section3Offset &&
+        scrollPosition < section4Offset) {
       updateSelectedIndex(2);
     } else if (scrollPosition >= section4Offset) {
       updateSelectedIndex(3);
@@ -158,7 +160,10 @@ class _LandingPageState extends State<LandingPage> {
                         // Handle Download action
                         break;
                       case 5:
-                        Navigator.push(context, MaterialPageRoute(builder: (context) => const LoginScreen()));
+                        Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => const LoginScreen()));
                         break;
                     }
                   },
@@ -254,7 +259,10 @@ class _LandingPageState extends State<LandingPage> {
                         color: secondaryColor,
                         textColor: greyColor,
                         text: 'SignIn',
-                        onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const LoginScreen())),
+                        onPressed: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => const LoginScreen())),
                       ),
                     ),
                   ],
@@ -275,37 +283,54 @@ class _LandingPageState extends State<LandingPage> {
             Container(
               key: section1Key,
               width: width(context),
-              margin: EdgeInsets.symmetric(horizontal: ResponsiveBreakpoints.of(context).smallerOrEqualTo(TABLET) ? 40 : 80),
+              margin: EdgeInsets.symmetric(
+                  horizontal:
+                      ResponsiveBreakpoints.of(context).smallerOrEqualTo(TABLET)
+                          ? 40
+                          : 80),
               child: ResponsiveRowColumn(
                 rowMainAxisAlignment: MainAxisAlignment.spaceBetween,
                 columnMainAxisAlignment: MainAxisAlignment.start,
-                layout: ResponsiveBreakpoints.of(context).smallerOrEqualTo(TABLET) ? ResponsiveRowColumnType.COLUMN : ResponsiveRowColumnType.ROW,
+                layout:
+                    ResponsiveBreakpoints.of(context).smallerOrEqualTo(TABLET)
+                        ? ResponsiveRowColumnType.COLUMN
+                        : ResponsiveRowColumnType.ROW,
                 children: [
                   ResponsiveRowColumnItem(
                     child: SizedBox(
-                      width: ResponsiveBreakpoints.of(context).smallerOrEqualTo(TABLET) ? width(context) - 40 : (width(context) / 2) - 80,
+                      width: ResponsiveBreakpoints.of(context)
+                              .smallerOrEqualTo(TABLET)
+                          ? width(context) - 40
+                          : (width(context) / 2) - 80,
                       child: Column(
                         children: [
                           Text(
                             'LandingPage.trackYourWaterUsage'.tr(),
-                            style: const TextStyle(fontSize: 40, fontWeight: FontWeight.bold),
+                            style: const TextStyle(
+                                fontSize: 40, fontWeight: FontWeight.bold),
                           ),
                           const SizedBox(height: 20),
                           Text(
                             'LandingPage.byUsingOurApp'.tr(),
-                            style: TextStyle(fontSize: 18, fontFamily: 'leon', color: darkGreyColor),
+                            style: TextStyle(
+                                fontSize: 18,
+                                fontFamily: 'leon',
+                                color: darkGreyColor),
                           ),
                           const SizedBox(height: 20),
                           Row(
                             children: [
                               MouseRegion(
                                 cursor: SystemMouseCursors.click,
-                                child: Image.asset('assets/images/appstore.png', height: 40),
+                                child: Image.asset('assets/images/appstore.png',
+                                    height: 40),
                               ),
                               const SizedBox(width: 10),
                               MouseRegion(
                                 cursor: SystemMouseCursors.click,
-                                child: Image.asset('assets/images/playstore.png', height: 40),
+                                child: Image.asset(
+                                    'assets/images/playstore.png',
+                                    height: 40),
                               ),
                             ],
                           )
@@ -315,9 +340,13 @@ class _LandingPageState extends State<LandingPage> {
                   ),
                   ResponsiveRowColumnItem(
                     child: SizedBox(
-                      width: ResponsiveBreakpoints.of(context).smallerOrEqualTo(TABLET) ? width(context) - 40 : (width(context) / 2) - 80,
+                      width: ResponsiveBreakpoints.of(context)
+                              .smallerOrEqualTo(TABLET)
+                          ? width(context) - 40
+                          : (width(context) / 2) - 80,
                       child: Center(
-                        child: Image.asset('assets/images/landing.png', fit: BoxFit.cover),
+                        child: Image.asset('assets/images/landing.png',
+                            fit: BoxFit.cover),
                       ),
                     ),
                   ),
@@ -332,8 +361,13 @@ class _LandingPageState extends State<LandingPage> {
             Container(
               key: section2Key,
               width: width(context),
-              margin: EdgeInsets.symmetric(horizontal: ResponsiveBreakpoints.of(context).smallerOrEqualTo(TABLET) ? 40 : 80),
-              decoration: BoxDecoration(color: greyColor, borderRadius: BorderRadius.circular(5)),
+              margin: EdgeInsets.symmetric(
+                  horizontal:
+                      ResponsiveBreakpoints.of(context).smallerOrEqualTo(TABLET)
+                          ? 40
+                          : 80),
+              decoration: BoxDecoration(
+                  color: greyColor, borderRadius: BorderRadius.circular(5)),
               child: Padding(
                 padding: const EdgeInsets.all(20.0),
                 child: Column(
@@ -342,18 +376,25 @@ class _LandingPageState extends State<LandingPage> {
                   children: [
                     Text(
                       'LandingPage.whoWeAre'.tr(),
-                      style: TextStyle(fontWeight: FontWeight.bold, color: primaryColor, fontSize: 16),
+                      style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: primaryColor,
+                          fontSize: 16),
                     ),
                     Text(
                       'LandingPage.welcomeToAguaMed'.tr(),
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 28),
+                      style: const TextStyle(
+                          fontWeight: FontWeight.bold, fontSize: 28),
                     ),
                     const SizedBox(
                       height: 30,
                     ),
                     Text(
                       'LandingPage.effortlessWaterUsageTracking'.tr(),
-                      style: TextStyle(fontWeight: FontWeight.bold, color: primaryColor, fontSize: 18),
+                      style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: primaryColor,
+                          fontSize: 18),
                     ),
                     SizedBox(
                       height: p,
@@ -367,7 +408,10 @@ class _LandingPageState extends State<LandingPage> {
                     ),
                     Text(
                       'LandingPage.secureWaterData'.tr(),
-                      style: TextStyle(fontWeight: FontWeight.bold, color: primaryColor, fontSize: 18),
+                      style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: primaryColor,
+                          fontSize: 18),
                     ),
                     SizedBox(height: p),
                     Text(
@@ -379,7 +423,10 @@ class _LandingPageState extends State<LandingPage> {
                     ),
                     Text(
                       'LandingPage.customerSupport'.tr(),
-                      style: TextStyle(fontWeight: FontWeight.bold, color: primaryColor, fontSize: 18),
+                      style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: primaryColor,
+                          fontSize: 18),
                     ),
                     SizedBox(
                       height: p,
@@ -393,7 +440,10 @@ class _LandingPageState extends State<LandingPage> {
                     ),
                     Text(
                       'LandingPage.consumptionInsights'.tr(),
-                      style: TextStyle(fontWeight: FontWeight.bold, color: primaryColor, fontSize: 18),
+                      style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: primaryColor,
+                          fontSize: 18),
                     ),
                     SizedBox(
                       height: p,
@@ -405,13 +455,17 @@ class _LandingPageState extends State<LandingPage> {
                     const SizedBox(height: 20),
                     Text(
                       'LandingPage.realTimeMonitoring'.tr(),
-                      style: TextStyle(fontWeight: FontWeight.bold, color: primaryColor, fontSize: 18),
+                      style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: primaryColor,
+                          fontSize: 18),
                     ),
                     SizedBox(
                       height: p,
                     ),
                     Text(
-                      'LandingPage.getInstantVisibilityIntoYourWaterConsumption'.tr(),
+                      'LandingPage.getInstantVisibilityIntoYourWaterConsumption'
+                          .tr(),
                       style: TextStyle(fontSize: 16),
                     ),
                   ],
@@ -426,14 +480,20 @@ class _LandingPageState extends State<LandingPage> {
             Container(
               width: width(context),
               margin: EdgeInsets.symmetric(
-                horizontal: ResponsiveBreakpoints.of(context).smallerOrEqualTo(TABLET) ? 40 : 80,
+                horizontal:
+                    ResponsiveBreakpoints.of(context).smallerOrEqualTo(TABLET)
+                        ? 40
+                        : 80,
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Text(
                     'LandingPage.ourPrinciples'.tr(),
-                    style: TextStyle(fontSize: 18, color: primaryColor, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                        fontSize: 18,
+                        color: primaryColor,
+                        fontWeight: FontWeight.bold),
                     textAlign: TextAlign.center,
                   ),
                   Text(
@@ -445,12 +505,18 @@ class _LandingPageState extends State<LandingPage> {
                   ResponsiveRowColumn(
                     rowMainAxisAlignment: MainAxisAlignment.spaceBetween,
                     columnMainAxisAlignment: MainAxisAlignment.start,
-                    layout: ResponsiveBreakpoints.of(context).smallerOrEqualTo(TABLET) ? ResponsiveRowColumnType.COLUMN : ResponsiveRowColumnType.ROW,
+                    layout: ResponsiveBreakpoints.of(context)
+                            .smallerOrEqualTo(TABLET)
+                        ? ResponsiveRowColumnType.COLUMN
+                        : ResponsiveRowColumnType.ROW,
                     children: [
                       ResponsiveRowColumnItem(
                         child: Container(
                           height: 400,
-                          width: ResponsiveBreakpoints.of(context).smallerOrEqualTo(TABLET) ? width(context) - 40 : (width(context) / 3) - 65,
+                          width: ResponsiveBreakpoints.of(context)
+                                  .smallerOrEqualTo(TABLET)
+                              ? width(context) - 40
+                              : (width(context) / 3) - 65,
                           decoration: BoxDecoration(
                             color: greyColor,
                             borderRadius: BorderRadius.circular(5),
@@ -469,14 +535,16 @@ class _LandingPageState extends State<LandingPage> {
                               Text(
                                 textAlign: TextAlign.center,
                                 'LandingPage.fastService'.tr(),
-                                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                                style: TextStyle(
+                                    fontSize: 24, fontWeight: FontWeight.bold),
                               ),
                               const SizedBox(height: 10),
                               Padding(
                                 padding: EdgeInsets.symmetric(horizontal: 18.0),
                                 child: Text(
                                   textAlign: TextAlign.center,
-                                  'LandingPage.weOfferFastAndReliableService'.tr(),
+                                  'LandingPage.weOfferFastAndReliableService'
+                                      .tr(),
                                   style: TextStyle(fontSize: 18),
                                 ),
                               )
@@ -484,29 +552,38 @@ class _LandingPageState extends State<LandingPage> {
                           ),
                         ),
                       ),
-                      const ResponsiveRowColumnItem(child: SizedBox(height: 20)),
+                      const ResponsiveRowColumnItem(
+                          child: SizedBox(height: 20)),
                       ResponsiveRowColumnItem(
                         child: Container(
                           height: 400,
-                          width: ResponsiveBreakpoints.of(context).smallerOrEqualTo(TABLET) ? width(context) - 40 : (width(context) / 3) - 65,
-                          decoration: BoxDecoration(color: greyColor, borderRadius: BorderRadius.circular(5)),
+                          width: ResponsiveBreakpoints.of(context)
+                                  .smallerOrEqualTo(TABLET)
+                              ? width(context) - 40
+                              : (width(context) / 3) - 65,
+                          decoration: BoxDecoration(
+                              color: greyColor,
+                              borderRadius: BorderRadius.circular(5)),
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.start,
                             crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
                               const SizedBox(height: 50),
-                              Image.asset('assets/images/professional.png', width: 80),
+                              Image.asset('assets/images/professional.png',
+                                  width: 80),
                               const SizedBox(height: 20),
                               Text(
                                 textAlign: TextAlign.center,
                                 'LandingPage.professionalInteractions'.tr(),
-                                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                                style: TextStyle(
+                                    fontSize: 24, fontWeight: FontWeight.bold),
                               ),
                               const SizedBox(height: 10),
                               Padding(
                                 padding: EdgeInsets.symmetric(horizontal: 18.0),
                                 child: Text(
-                                  'LandingPage.ourTechniciansUpholdTheHighestLevelOfProfessionalism'.tr(),
+                                  'LandingPage.ourTechniciansUpholdTheHighestLevelOfProfessionalism'
+                                      .tr(),
                                   textAlign: TextAlign.center,
                                   style: TextStyle(fontSize: 18),
                                 ),
@@ -515,23 +592,31 @@ class _LandingPageState extends State<LandingPage> {
                           ),
                         ),
                       ),
-                      const ResponsiveRowColumnItem(child: SizedBox(height: 20)),
+                      const ResponsiveRowColumnItem(
+                          child: SizedBox(height: 20)),
                       ResponsiveRowColumnItem(
                         child: Container(
                           height: 400,
-                          width: ResponsiveBreakpoints.of(context).smallerOrEqualTo(TABLET) ? width(context) - 40 : (width(context) / 3) - 65,
-                          decoration: BoxDecoration(color: greyColor, borderRadius: BorderRadius.circular(5)),
+                          width: ResponsiveBreakpoints.of(context)
+                                  .smallerOrEqualTo(TABLET)
+                              ? width(context) - 40
+                              : (width(context) / 3) - 65,
+                          decoration: BoxDecoration(
+                              color: greyColor,
+                              borderRadius: BorderRadius.circular(5)),
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.start,
                             crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
                               const SizedBox(height: 50),
-                              Image.asset('assets/images/gloves.png', width: 80),
+                              Image.asset('assets/images/gloves.png',
+                                  width: 80),
                               const SizedBox(height: 20),
                               Text(
                                 textAlign: TextAlign.center,
                                 'LandingPage.whiteGloveService'.tr(),
-                                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                                style: TextStyle(
+                                    fontSize: 24, fontWeight: FontWeight.bold),
                               ),
                               const SizedBox(height: 10),
                               Padding(
@@ -559,7 +644,10 @@ class _LandingPageState extends State<LandingPage> {
             Container(
               width: width(context),
               margin: EdgeInsets.symmetric(
-                horizontal: ResponsiveBreakpoints.of(context).smallerOrEqualTo(TABLET) ? 40 : 80,
+                horizontal:
+                    ResponsiveBreakpoints.of(context).smallerOrEqualTo(TABLET)
+                        ? 40
+                        : 80,
               ),
               key: section3Key,
               child: Column(
@@ -567,7 +655,10 @@ class _LandingPageState extends State<LandingPage> {
                 children: [
                   Text(
                     'LandingPage.ourServices'.tr(),
-                    style: TextStyle(fontSize: 18, color: primaryColor, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                        fontSize: 18,
+                        color: primaryColor,
+                        fontWeight: FontWeight.bold),
                     textAlign: TextAlign.center,
                   ),
                   Text(
@@ -579,12 +670,18 @@ class _LandingPageState extends State<LandingPage> {
                   ResponsiveRowColumn(
                     rowMainAxisAlignment: MainAxisAlignment.spaceBetween,
                     columnMainAxisAlignment: MainAxisAlignment.start,
-                    layout: ResponsiveBreakpoints.of(context).smallerOrEqualTo(TABLET) ? ResponsiveRowColumnType.COLUMN : ResponsiveRowColumnType.ROW,
+                    layout: ResponsiveBreakpoints.of(context)
+                            .smallerOrEqualTo(TABLET)
+                        ? ResponsiveRowColumnType.COLUMN
+                        : ResponsiveRowColumnType.ROW,
                     children: [
                       ResponsiveRowColumnItem(
                         child: Container(
                           height: 400,
-                          width: ResponsiveBreakpoints.of(context).smallerOrEqualTo(TABLET) ? width(context) - 40 : (width(context) / 3) - 65,
+                          width: ResponsiveBreakpoints.of(context)
+                                  .smallerOrEqualTo(TABLET)
+                              ? width(context) - 40
+                              : (width(context) / 3) - 65,
                           decoration: BoxDecoration(
                             color: greyColor,
                             borderRadius: BorderRadius.circular(5),
@@ -603,14 +700,16 @@ class _LandingPageState extends State<LandingPage> {
                               Text(
                                 textAlign: TextAlign.center,
                                 'LandingPage.instantAlerts'.tr(),
-                                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                                style: TextStyle(
+                                    fontSize: 24, fontWeight: FontWeight.bold),
                               ),
                               const SizedBox(height: 10),
                               Padding(
                                 padding: EdgeInsets.symmetric(horizontal: 18.0),
                                 child: Text(
                                   textAlign: TextAlign.center,
-                                  'LandingPage.receiveInstantUpdatesOnMeterReadings'.tr(),
+                                  'LandingPage.receiveInstantUpdatesOnMeterReadings'
+                                      .tr(),
                                   style: TextStyle(fontSize: 18),
                                 ),
                               )
@@ -618,29 +717,38 @@ class _LandingPageState extends State<LandingPage> {
                           ),
                         ),
                       ),
-                      const ResponsiveRowColumnItem(child: SizedBox(height: 20)),
+                      const ResponsiveRowColumnItem(
+                          child: SizedBox(height: 20)),
                       ResponsiveRowColumnItem(
                         child: Container(
                           height: 400,
-                          width: ResponsiveBreakpoints.of(context).smallerOrEqualTo(TABLET) ? width(context) - 40 : (width(context) / 3) - 65,
-                          decoration: BoxDecoration(color: greyColor, borderRadius: BorderRadius.circular(5)),
+                          width: ResponsiveBreakpoints.of(context)
+                                  .smallerOrEqualTo(TABLET)
+                              ? width(context) - 40
+                              : (width(context) / 3) - 65,
+                          decoration: BoxDecoration(
+                              color: greyColor,
+                              borderRadius: BorderRadius.circular(5)),
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.start,
                             crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
                               const SizedBox(height: 50),
-                              Image.asset('assets/images/security.png', width: 80),
+                              Image.asset('assets/images/security.png',
+                                  width: 80),
                               const SizedBox(height: 20),
                               Text(
                                 textAlign: TextAlign.center,
                                 'LandingPage.dataSecurity'.tr(),
-                                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                                style: TextStyle(
+                                    fontSize: 24, fontWeight: FontWeight.bold),
                               ),
                               const SizedBox(height: 10),
                               Padding(
                                 padding: EdgeInsets.symmetric(horizontal: 18.0),
                                 child: Text(
-                                  'LandingPage.accessYourWaterConsumptionDataSecurely'.tr(),
+                                  'LandingPage.accessYourWaterConsumptionDataSecurely'
+                                      .tr(),
                                   textAlign: TextAlign.center,
                                   style: TextStyle(fontSize: 18),
                                 ),
@@ -649,12 +757,18 @@ class _LandingPageState extends State<LandingPage> {
                           ),
                         ),
                       ),
-                      const ResponsiveRowColumnItem(child: SizedBox(height: 20)),
+                      const ResponsiveRowColumnItem(
+                          child: SizedBox(height: 20)),
                       ResponsiveRowColumnItem(
                         child: Container(
                           height: 400,
-                          width: ResponsiveBreakpoints.of(context).smallerOrEqualTo(TABLET) ? width(context) - 40 : (width(context) / 3) - 65,
-                          decoration: BoxDecoration(color: greyColor, borderRadius: BorderRadius.circular(5)),
+                          width: ResponsiveBreakpoints.of(context)
+                                  .smallerOrEqualTo(TABLET)
+                              ? width(context) - 40
+                              : (width(context) / 3) - 65,
+                          decoration: BoxDecoration(
+                              color: greyColor,
+                              borderRadius: BorderRadius.circular(5)),
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.start,
                             crossAxisAlignment: CrossAxisAlignment.center,
@@ -665,13 +779,15 @@ class _LandingPageState extends State<LandingPage> {
                               Text(
                                 textAlign: TextAlign.center,
                                 'LandingPage.savingsTips'.tr(),
-                                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                                style: TextStyle(
+                                    fontSize: 24, fontWeight: FontWeight.bold),
                               ),
                               const SizedBox(height: 10),
                               Padding(
                                 padding: EdgeInsets.symmetric(horizontal: 18.0),
                                 child: Text(
-                                  'LandingPage.getTailoredSuggestionsToHelpYouReduceWaterWaste'.tr(),
+                                  'LandingPage.getTailoredSuggestionsToHelpYouReduceWaterWaste'
+                                      .tr(),
                                   textAlign: TextAlign.center,
                                   style: TextStyle(fontSize: 18),
                                 ),
@@ -693,10 +809,16 @@ class _LandingPageState extends State<LandingPage> {
             Container(
               width: width(context),
               key: section4Key,
-              padding: EdgeInsets.symmetric(horizontal: ResponsiveBreakpoints.of(context).smallerOrEqualTo(TABLET) ? 40 : 80),
+              padding: EdgeInsets.symmetric(
+                  horizontal:
+                      ResponsiveBreakpoints.of(context).smallerOrEqualTo(TABLET)
+                          ? 40
+                          : 80),
               decoration: BoxDecoration(
                 color: primaryColor,
-                borderRadius: const BorderRadius.only(topRight: Radius.circular(30), topLeft: Radius.circular(30)),
+                borderRadius: const BorderRadius.only(
+                    topRight: Radius.circular(30),
+                    topLeft: Radius.circular(30)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -705,11 +827,17 @@ class _LandingPageState extends State<LandingPage> {
                   ResponsiveRowColumn(
                     rowMainAxisAlignment: MainAxisAlignment.spaceBetween,
                     columnMainAxisAlignment: MainAxisAlignment.start,
-                    layout: ResponsiveBreakpoints.of(context).smallerOrEqualTo(TABLET) ? ResponsiveRowColumnType.COLUMN : ResponsiveRowColumnType.ROW,
+                    layout: ResponsiveBreakpoints.of(context)
+                            .smallerOrEqualTo(TABLET)
+                        ? ResponsiveRowColumnType.COLUMN
+                        : ResponsiveRowColumnType.ROW,
                     children: [
                       ResponsiveRowColumnItem(
                         child: SizedBox(
-                          width: ResponsiveBreakpoints.of(context).smallerOrEqualTo(TABLET) ? width(context) - 40 : (width(context) / 2) - 80,
+                          width: ResponsiveBreakpoints.of(context)
+                                  .smallerOrEqualTo(TABLET)
+                              ? width(context) - 40
+                              : (width(context) / 2) - 80,
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.start,
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -720,15 +848,22 @@ class _LandingPageState extends State<LandingPage> {
                                   Container(
                                     height: 30,
                                     width: 30,
-                                    decoration: BoxDecoration(shape: BoxShape.circle, color: whiteColor),
+                                    decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: whiteColor),
                                     child: Center(
-                                      child: Image.asset('assets/images/icon.png', width: 20),
+                                      child: Image.asset(
+                                          'assets/images/icon.png',
+                                          width: 20),
                                     ),
                                   ),
                                   const SizedBox(width: 8),
                                   Text(
                                     'AguaMed',
-                                    style: TextStyle(color: whiteColor, fontSize: 20, fontWeight: FontWeight.bold),
+                                    style: TextStyle(
+                                        color: whiteColor,
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.bold),
                                   ),
                                 ],
                               ),
@@ -737,14 +872,18 @@ class _LandingPageState extends State<LandingPage> {
                                 children: [
                                   Text(
                                     'LandingPage.supportEmail'.tr(),
-                                    style: TextStyle(color: whiteColor, fontSize: 16),
+                                    style: TextStyle(
+                                        color: whiteColor, fontSize: 16),
                                   ),
                                   SizedBox(width: p),
-                                  Text('|', style: TextStyle(color: whiteColor, fontSize: 16)),
+                                  Text('|',
+                                      style: TextStyle(
+                                          color: whiteColor, fontSize: 16)),
                                   SizedBox(width: p),
                                   Text(
                                     'LandingPage.supportPhone'.tr(),
-                                    style: TextStyle(color: whiteColor, fontSize: 16),
+                                    style: TextStyle(
+                                        color: whiteColor, fontSize: 16),
                                   ),
                                 ],
                               ),
@@ -756,8 +895,15 @@ class _LandingPageState extends State<LandingPage> {
                                     child: Container(
                                       height: 35,
                                       width: 35,
-                                      decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: whiteColor, width: 2)),
-                                      child: Center(child: Image.asset('assets/images/instagram.png', color: whiteColor, width: 20)),
+                                      decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          border: Border.all(
+                                              color: whiteColor, width: 2)),
+                                      child: Center(
+                                          child: Image.asset(
+                                              'assets/images/instagram.png',
+                                              color: whiteColor,
+                                              width: 20)),
                                     ),
                                   ),
                                   SizedBox(width: p),
@@ -766,8 +912,15 @@ class _LandingPageState extends State<LandingPage> {
                                     child: Container(
                                       height: 35,
                                       width: 35,
-                                      decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: whiteColor, width: 2)),
-                                      child: Center(child: Image.asset('assets/images/facebook.png', color: whiteColor, width: 20)),
+                                      decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          border: Border.all(
+                                              color: whiteColor, width: 2)),
+                                      child: Center(
+                                          child: Image.asset(
+                                              'assets/images/facebook.png',
+                                              color: whiteColor,
+                                              width: 20)),
                                     ),
                                   ),
                                   SizedBox(width: p),
@@ -776,8 +929,15 @@ class _LandingPageState extends State<LandingPage> {
                                     child: Container(
                                       height: 35,
                                       width: 35,
-                                      decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: whiteColor, width: 2)),
-                                      child: Center(child: Image.asset('assets/images/youtube.png', color: whiteColor, width: 20)),
+                                      decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          border: Border.all(
+                                              color: whiteColor, width: 2)),
+                                      child: Center(
+                                          child: Image.asset(
+                                              'assets/images/youtube.png',
+                                              color: whiteColor,
+                                              width: 20)),
                                     ),
                                   ),
                                 ],
@@ -788,13 +948,19 @@ class _LandingPageState extends State<LandingPage> {
                       ),
                       ResponsiveRowColumnItem(
                         child: SizedBox(
-                          width: ResponsiveBreakpoints.of(context).smallerOrEqualTo(TABLET) ? width(context) - 40 : (width(context) / 2) - 80,
+                          width: ResponsiveBreakpoints.of(context)
+                                  .smallerOrEqualTo(TABLET)
+                              ? width(context) - 40
+                              : (width(context) / 2) - 80,
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.start,
                             children: [
                               Text(
                                 'LandingPage.downloadTheApp'.tr(),
-                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: whiteColor),
+                                style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 18,
+                                    color: whiteColor),
                                 textAlign: TextAlign.center,
                               ),
                               const SizedBox(height: 10),
@@ -803,12 +969,16 @@ class _LandingPageState extends State<LandingPage> {
                                 children: [
                                   MouseRegion(
                                     cursor: SystemMouseCursors.click,
-                                    child: Image.asset('assets/images/appstore.png', height: 30),
+                                    child: Image.asset(
+                                        'assets/images/appstore.png',
+                                        height: 30),
                                   ),
                                   const SizedBox(width: 10),
                                   MouseRegion(
                                     cursor: SystemMouseCursors.click,
-                                    child: Image.asset('assets/images/playstore.png', height: 30),
+                                    child: Image.asset(
+                                        'assets/images/playstore.png',
+                                        height: 30),
                                   ),
                                 ],
                               ),
@@ -819,7 +989,8 @@ class _LandingPageState extends State<LandingPage> {
                     ],
                   ),
                   const SizedBox(height: 20),
-                  Text('LandingPage.copyright'.tr(), style: TextStyle(fontSize: 18, color: whiteColor)),
+                  Text('LandingPage.copyright'.tr(),
+                      style: TextStyle(fontSize: 18, color: whiteColor)),
                   const SizedBox(height: 50),
                 ],
               ),

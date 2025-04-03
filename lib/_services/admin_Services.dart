@@ -12,23 +12,32 @@ class AdminService {
 
   //To Show verification of Users who signed Up========================
 
-  Stream pendingUsers() {
-    return firestore.collection('users').where('status', isEqualTo: 'pending').snapshots().map((snapshot) {
-      return snapshot.docs.where((doc) {
-        final isDeleted = doc.data()['isDeleted'];
-        return isDeleted == null || isDeleted == false;
-      }).map((doc) {
-        var obj = doc.data();
-        obj['id'] = doc.id;
-        return obj;
-      }).toList();
-    });
-  }
+  // Stream pendingUsers() {
+  //   return firestore
+  //       .collection('users')
+  //       .where('status', isEqualTo: 'pending')
+  //       .snapshots()
+  //       .map((snapshot) {
+  //     return snapshot.docs.where((doc) {
+  //       final isDeleted = doc.data()['isDeleted'];
+  //       return isDeleted == null || isDeleted == false;
+  //     }).map((doc) {
+  //       var obj = doc.data();
+  //       obj['id'] = doc.id;
+  //       return obj;
+  //     }).toList();
+  //   });
+  // }
 
   //Registered HouseOwners================================
   Stream<dynamic> fetchAllUsers(role) {
     if (userSD['role'] == 'Admin') {
-      return firestore.collection('users').where('role', isEqualTo: role).where('isDeleted', isEqualTo: false).snapshots().map((snapshot) {
+      return firestore
+          .collection('users')
+          .where('role', isEqualTo: role)
+          .where('isDeleted', isEqualTo: false)
+          .snapshots()
+          .map((snapshot) {
         return snapshot.docs.map((doc) {
           var obj = doc.data();
           obj['id'] = doc.id;
@@ -40,7 +49,13 @@ class AdminService {
       if (town != null) {
         var townId = town['id'];
         if (role == 'HouseOwner') {
-          return firestore.collection('users').where('role', isEqualTo: role).where('town.id', isEqualTo: townId).where('isDeleted', isEqualTo: false).snapshots().map((snapshot) {
+          return firestore
+              .collection('users')
+              .where('role', isEqualTo: role)
+              .where('town.id', isEqualTo: townId)
+              .where('isDeleted', isEqualTo: false)
+              .snapshots()
+              .map((snapshot) {
             return snapshot.docs.map((doc) {
               var obj = doc.data();
               obj['id'] = doc.id;
@@ -48,7 +63,12 @@ class AdminService {
             }).toList();
           });
         } else {
-          return firestore.collection('users').where('role', isEqualTo: role).where('isDeleted', isEqualTo: false).snapshots().map((snapshot) {
+          return firestore
+              .collection('users')
+              .where('role', isEqualTo: role)
+              .where('isDeleted', isEqualTo: false)
+              .snapshots()
+              .map((snapshot) {
             return snapshot.docs.where((doc) {
               var towns = doc.data()['town'];
               if (towns != null) {
@@ -74,36 +94,70 @@ class AdminService {
 
   //Registered Inspector==============================
   Stream registeredInspectors() {
-    return firestore.collection('users').where('role', isEqualTo: 'Inspector').snapshots().map((snapshot) {
+    return firestore
+        .collection('users')
+        .where('role', isEqualTo: 'Inspector')
+        .snapshots()
+        .map((snapshot) {
       return snapshot.docs.where((doc) {
         final isDeleted = doc.data()['isDeleted'];
         return isDeleted == null || isDeleted == false;
       }).map((doc) {
-        return {'id': doc.id, 'firstName': doc['firstName'], 'lastName': doc['lastName'], 'email': doc['email'], 'phone': doc['phone'], 'town': doc['town'], 'role': doc['role'], 'status': doc['status'], 'profileImageUrl': doc['profileImageUrl']};
+        return {
+          'id': doc.id,
+          'firstName': doc['firstName'],
+          'lastName': doc['lastName'],
+          'email': doc['email'],
+          'phone': doc['phone'],
+          'town': doc['town'],
+          'role': doc['role'],
+          'status': doc['status'],
+          'profileImageUrl': doc['profileImageUrl']
+        };
       }).toList();
     });
   }
 
   //Registered Manager==============================
   Stream registeredManagers() {
-    return firestore.collection('users').where('role', isEqualTo: 'Manager').snapshots().map((snapshot) {
+    return firestore
+        .collection('users')
+        .where('role', isEqualTo: 'Manager')
+        .snapshots()
+        .map((snapshot) {
       return snapshot.docs.where((doc) {
         final isDeleted = doc.data()['isDeleted'];
         return isDeleted == null || isDeleted == false;
       }).map((doc) {
-        return {'id': doc.id, 'firstName': doc['firstName'], 'lastName': doc['lastName'], 'email': doc['email'], 'phone': doc['phone'], 'town': doc['town'], 'role': doc['role'], 'status': doc['status'], 'profileImageUrl': doc['profileImageUrl']};
+        return {
+          'id': doc.id,
+          'firstName': doc['firstName'],
+          'lastName': doc['lastName'],
+          'email': doc['email'],
+          'phone': doc['phone'],
+          'town': doc['town'],
+          'role': doc['role'],
+          'status': doc['status'],
+          'profileImageUrl': doc['profileImageUrl']
+        };
       }).toList();
     });
   }
 
   //block user========================================
   blockUser(String userId) async {
-    await firestore.collection('users').doc(userId).update({'status': 'blocked'});
+    await firestore
+        .collection('users')
+        .doc(userId)
+        .update({'status': 'blocked'});
   }
 
   //UnblockUser========================================
   unblockUser(String userId) async {
-    await firestore.collection('users').doc(userId).update({'status': 'active'});
+    await firestore
+        .collection('users')
+        .doc(userId)
+        .update({'status': 'active'});
   }
 
   //Delete user======================================
@@ -126,11 +180,14 @@ class AdminService {
 
       await userRef.update(updatedData);
 
-      showToast(context, msg: 'AdminService.userDetailsUpdatedSuccessfully'.tr(), duration: 2);
+      showToast(context,
+          msg: 'AdminService.userDetailsUpdatedSuccessfully'.tr(), duration: 2);
     } on FirebaseException catch (e) {
-      showToast(context, msg: 'AdminService.error'.tr() + ': ${e.message}', duration: 2);
+      showToast(context,
+          msg: '${'AdminService.error'.tr()}: ${e.message}', duration: 2);
     } catch (e) {
-      showToast(context, msg: 'AdminService.somethingWentWrongTryAgain'.tr(), duration: 2);
+      showToast(context,
+          msg: 'AdminService.somethingWentWrongTryAgain'.tr(), duration: 2);
     }
   }
 }
