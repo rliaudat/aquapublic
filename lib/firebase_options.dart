@@ -58,7 +58,7 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyC_542OyhUy60AgwdQ3vSTvEcw4FVOpH14',
-    appId: '1:100791974111:android:ec93818df481462736916a',
+    appId: '1:100791974111:android:cccf89ff0cec06db36916a',
     messagingSenderId: '100791974111',
     projectId: 'aqua-med',
     storageBucket: 'aqua-med.firebasestorage.app',

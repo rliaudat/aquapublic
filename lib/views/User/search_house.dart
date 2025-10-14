@@ -39,7 +39,8 @@ class _SearchHouseScreenState extends State<SearchHouseScreen> {
   /// Fetch the list of towns from Firestore
   Future<void> _fetchTowns() async {
     try {
-      final townSnapshot = await FirebaseFirestore.instance.collection('towns').get();
+      final townSnapshot =
+          await FirebaseFirestore.instance.collection('towns').get();
       final towns = townSnapshot.docs.map((doc) {
         return {'id': doc.id, 'name': doc['name'] ?? 'Unnamed Town'};
       }).toList();
@@ -60,17 +61,28 @@ class _SearchHouseScreenState extends State<SearchHouseScreen> {
 
     try {
       // Fetch house names for the selected town
-      final housesSnapshot = await FirebaseFirestore.instance.collection('towns').doc(_townId).collection('houses').get();
+      final housesSnapshot = await FirebaseFirestore.instance
+          .collection('towns')
+          .doc(_townId)
+          .collection('houses')
+          .get();
 
-      _houseNames = {for (var doc in housesSnapshot.docs) doc.id: doc.data()['name'] ?? 'Unknown'};
+      _houseNames = {
+        for (var doc in housesSnapshot.docs)
+          doc.id: doc.data()['name'] ?? 'Unknown'
+      };
       if (mounted) setState(() {});
 
       // Initialize the readings stream
-      _readingsStream = FirebaseFirestore.instance.collection('reading').where('townId', isEqualTo: _townId).snapshots().map((snapshot) => snapshot.docs.map((doc) {
-            final data = doc.data();
-            data['id'] = doc.id;
-            return data;
-          }).toList());
+      _readingsStream = FirebaseFirestore.instance
+          .collection('reading')
+          .where('townId', isEqualTo: _townId)
+          .snapshots()
+          .map((snapshot) => snapshot.docs.map((doc) {
+                final data = doc.data();
+                data['id'] = doc.id;
+                return data;
+              }).toList());
       if (mounted) setState(() {});
     } catch (e) {
       print("Error initializing data: $e");
@@ -113,12 +125,15 @@ class _SearchHouseScreenState extends State<SearchHouseScreen> {
                       },
                       child: Container(
                         margin: const EdgeInsets.symmetric(vertical: 6.0),
-                        padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 16.0),
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 12.0, horizontal: 16.0),
                         decoration: BoxDecoration(
                           color: isSelected ? primaryColor : Colors.white,
                           borderRadius: BorderRadius.circular(8.0),
                           border: Border.all(
-                            color: isSelected ? primaryColor : Colors.grey.withOpacity(0.4),
+                            color: isSelected
+                                ? primaryColor
+                                : Colors.grey.withOpacity(0.4),
                             width: 1,
                           ),
                         ),
@@ -126,7 +141,9 @@ class _SearchHouseScreenState extends State<SearchHouseScreen> {
                           town['name'],
                           style: TextStyle(
                             fontSize: 16,
-                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                            fontWeight: isSelected
+                                ? FontWeight.bold
+                                : FontWeight.normal,
                             color: isSelected ? Colors.white : Colors.black,
                           ),
                         ),
@@ -152,7 +169,11 @@ class _SearchHouseScreenState extends State<SearchHouseScreen> {
     // Fetch the specific readings for the houseId
     List<Map<String, dynamic>> houseReadings = [];
     if (_readingsStream != null) {
-      final snapshot = await FirebaseFirestore.instance.collection('reading').where('houseId', isEqualTo: houseId).where('townId', isEqualTo: _townId).get();
+      final snapshot = await FirebaseFirestore.instance
+          .collection('reading')
+          .where('houseId', isEqualTo: houseId)
+          .where('townId', isEqualTo: _townId)
+          .get();
 
       houseReadings = snapshot.docs.map((doc) => doc.data()).toList();
     }
@@ -166,7 +187,8 @@ class _SearchHouseScreenState extends State<SearchHouseScreen> {
 
     if (houseReadings.isNotEmpty) {
       // Sort readings by date to ensure chronological order
-      houseReadings.sort((a, b) => DateTime.parse(a['date']).compareTo(DateTime.parse(b['date'])));
+      houseReadings.sort((a, b) =>
+          DateTime.parse(a['date']).compareTo(DateTime.parse(b['date'])));
 
       for (var reading in houseReadings) {
         final date = DateTime.parse(reading['date']);
@@ -307,7 +329,20 @@ class _SearchHouseScreenState extends State<SearchHouseScreen> {
   }
 
   String _getMonthName(int month) {
-    const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+    const monthNames = [
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December"
+    ];
     return month >= 1 && month <= 12 ? monthNames[month - 1] : "Unknown";
   }
 
@@ -361,18 +396,24 @@ class _SearchHouseScreenState extends State<SearchHouseScreen> {
                         stream: _readingsStream,
                         builder: (context, snapshot) {
                           if (!snapshot.hasData) {
-                            return const Center(child: CircularProgressIndicator());
+                            return const Center(
+                                child: CircularProgressIndicator());
                           }
 
                           var data = snapshot.data!;
                           var filteredData = data.where((item) {
                             if (searchValue.isEmpty) return true;
-                            return item['houseId'].toString().contains(searchValue);
+                            return item['houseId']
+                                .toString()
+                                .contains(searchValue);
                           }).toList();
 
                           int totalRows = filteredData.length;
                           int totalPages = (totalRows / rowsPerPage).ceil();
-                          var paginatedData = filteredData.skip(currentPage * rowsPerPage).take(rowsPerPage).toList();
+                          var paginatedData = filteredData
+                              .skip(currentPage * rowsPerPage)
+                              .take(rowsPerPage)
+                              .toList();
 
                           return Column(
                             children: [
@@ -387,7 +428,8 @@ class _SearchHouseScreenState extends State<SearchHouseScreen> {
                                   ),
                                   filled: true,
                                   fillColor: whiteColor,
-                                  contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                                  contentPadding:
+                                      const EdgeInsets.symmetric(vertical: 8),
                                 ),
                                 onChanged: (value) {
                                   searchValue = value;
@@ -400,7 +442,8 @@ class _SearchHouseScreenState extends State<SearchHouseScreen> {
                                 child: SingleChildScrollView(
                                   child: DataTable(
                                     columnSpacing: 16,
-                                    headingRowColor: WidgetStateProperty.resolveWith(
+                                    headingRowColor:
+                                        WidgetStateProperty.resolveWith(
                                       (states) => primaryColor,
                                     ),
                                     headingTextStyle: const TextStyle(
@@ -414,13 +457,17 @@ class _SearchHouseScreenState extends State<SearchHouseScreen> {
                                       DataColumn(label: Text('Bill')),
                                     ],
                                     rows: paginatedData.map((item) {
-                                      final houseName = _houseNames[item['houseId']] ?? 'Unknown';
+                                      final houseName =
+                                          _houseNames[item['houseId']] ??
+                                              'Unknown';
 
                                       return DataRow(
                                         cells: [
                                           DataCell(Text(houseName)),
-                                          DataCell(Text('${item['reading']} m³')),
-                                          DataCell(Text('\$${item['amount'].toString()}')),
+                                          DataCell(
+                                              Text('${item['reading']} m³')),
+                                          DataCell(Text(
+                                              '\$${item['amount'].toString()}')),
                                           DataCell(
                                             IconButton(
                                               icon: Icon(
@@ -428,7 +475,8 @@ class _SearchHouseScreenState extends State<SearchHouseScreen> {
                                                 color: secondaryColor,
                                               ),
                                               onPressed: () {
-                                                showPdfPreview(context, item['houseId']);
+                                                showPdfPreview(
+                                                    context, item['houseId']);
                                               },
                                             ),
                                           ),

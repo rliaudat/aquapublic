@@ -2,14 +2,17 @@ import 'dart:async';
 
 import 'package:agua_med/Components/Drawer.dart';
 import 'package:agua_med/Components/Reuseable.dart';
-import 'package:agua_med/_helpers/global.dart';
 import 'package:agua_med/_helpers/helper.dart';
+import 'package:agua_med/_services/town_services.dart';
 import 'package:agua_med/loading.dart';
+import 'package:agua_med/providers/admin_invoice_provider.dart';
+import 'package:agua_med/providers/user_provider.dart';
 import 'package:agua_med/theme.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:printing/printing.dart';
+import 'package:provider/provider.dart';
 import 'package:responsive_framework/responsive_framework.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:pdf/pdf.dart';
@@ -25,64 +28,57 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
   // Variables
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
 
-  List allTowns = [];
+  List towns = [];
   List allData = [];
   List filteredData = [];
-  var _selectedTown;
-
-  bool isLoading = false;
-
-  bool searchHover = false;
+  Map<String, dynamic>? _selectedTown;
 
   int currentPage = 0;
   int totalPages = 0;
 
   TextEditingController searchController = TextEditingController();
 
-  // Functions
   loadTowns() {
-    if (userSD['role'] == 'Admin') {
-      isLoading = true;
-      if (mounted) setState(() {});
-      firestore.collection('towns').where('isDelete', isEqualTo: false).orderBy('createdAt').get().then((data) {
-        allTowns = data.docs.map((doc) {
+    if (context.read<UserProvider>().user!.role == 'Admin') {
+      context.read<AdminInvoiceProvider>().setIsLoading(true);
+      TownServices.fetchAll().then((data) {
+        towns = data.map((doc) {
           return {
             'id': doc.id,
-            ...doc.data(),
+            'name': doc.name,
           };
         }).toList();
-        _selectedTown = allTowns.first;
+        _selectedTown = towns.first;
         loadData();
-        if (mounted) setState(() {});
       });
-    } else if (userSD['role'] == 'Manager') {
-      allTowns.add(userSD['town']);
-      if (allTowns.isNotEmpty) {
-        _selectedTown = allTowns.first;
-        if (mounted) setState(() {});
+    } else if (context.read<UserProvider>().user!.role == 'Manager') {
+      towns.add(context.read<UserProvider>().user!.town);
+      if (towns.isNotEmpty) {
+        _selectedTown = towns.first;
         loadData();
       }
-    } else if (userSD['role'] == 'Inspector') {
-      allTowns.addAll(userSD['town']);
-      if (allTowns.isNotEmpty) {
-        _selectedTown = allTowns.first;
-        if (mounted) setState(() {});
+    } else if (context.read<UserProvider>().user!.role == 'Inspector') {
+      towns.addAll(context.read<UserProvider>().user!.town);
+      if (towns.isNotEmpty) {
+        _selectedTown = towns.first;
         loadData();
       }
     }
   }
 
   loadData() {
-    isLoading = true;
-    if (mounted) setState(() {});
-    firestore.collection('reading').where('townId', isEqualTo: _selectedTown['id']).snapshots().listen((querySnapshot) async {
+    context.read<AdminInvoiceProvider>().setIsLoading(true);
+    firestore
+        .collection('readings')
+        .where('townId', isEqualTo: _selectedTown?['id'] ?? 'No ID')
+        .snapshots()
+        .listen((querySnapshot) async {
       final readings = await Future.wait(querySnapshot.docs.map((doc) async {
         final data = doc.data();
-        data['id'] = doc.id;
 
-        // Get house data for each reading's houseId
         if (data['houseId'] != null) {
-          final houseDoc = await firestore.collection('towns').doc(_selectedTown['id']).collection('houses').doc(data['houseId']).get();
+          final houseDoc =
+              await firestore.collection('house').doc(data['houseId']).get();
 
           if (houseDoc.exists) {
             data['houseData'] = {
@@ -95,13 +91,12 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
         }
         return data;
       }).toList());
-      isLoading = false;
+      context.read<AdminInvoiceProvider>().setIsLoading(false);
       allData = readings;
       filteredData = allData;
       totalPages = (allData.length / 10).ceil();
-      if (mounted) setState(() {});
     }).onError((e) {
-      print('Error loading data: $e');
+      debugPrint('Error loading data: $e');
     });
   }
 
@@ -140,23 +135,26 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
 
   Future<void> deleteInvoice(Map<String, dynamic> item) async {
     String id = item['id'];
-    final houseId = item['houseId'];
-    final townId = item['townId'];
     try {
-      await firestore.collection('reading').doc(id).delete();
-      await firestore.collection('towns').doc(townId).collection('houses').doc(houseId).collection('reading').doc(id).delete();
+      await firestore.collection('readings').doc(id).delete();
     } catch (e) {
-      print('Error deleting invoice: $e');
+      debugPrint('Error deleting invoice: $e');
     }
   }
 
   Future<void> showEditDialog(Map<String, dynamic> item) async {
-    TextEditingController lastReadingController = TextEditingController(text: item['previousReading'].toString());
-    TextEditingController readingController = TextEditingController(text: item['reading'].toString());
-    TextEditingController consumptionController = TextEditingController(text: item['units'].toString());
-    TextEditingController dateController = TextEditingController(text: dateFromTimestamp(item['date']));
-    TextEditingController consumptionDaysController = TextEditingController(text: item['consumptionDays'].toString());
-    TextEditingController amountController = TextEditingController(text: item['amount'].toString());
+    TextEditingController lastReadingController =
+        TextEditingController(text: item['previousReading'].toString());
+    TextEditingController readingController =
+        TextEditingController(text: item['reading'].toString());
+    TextEditingController consumptionController =
+        TextEditingController(text: item['units'].toString());
+    TextEditingController dateController =
+        TextEditingController(text: dateFromTimestamp(item['date']));
+    TextEditingController consumptionDaysController =
+        TextEditingController(text: item['consumptionDays'].toString());
+    TextEditingController amountController =
+        TextEditingController(text: item['amount'].toString());
 
     Future<void> _selectDate(BuildContext context) async {
       final DateTime? picked = await showDatePicker(
@@ -179,27 +177,33 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Last Reading', style: TextStyle(fontWeight: FontWeight.bold)),
+              const Text('Last Reading',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
               TextField(
                 controller: lastReadingController,
-                decoration: const InputDecoration(hintText: 'Enter last reading'),
+                decoration:
+                    const InputDecoration(hintText: 'Enter last reading'),
                 keyboardType: TextInputType.number,
               ),
               const SizedBox(height: 10),
-              const Text('Current Reading', style: TextStyle(fontWeight: FontWeight.bold)),
+              const Text('Current Reading',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
               TextField(
                 controller: readingController,
-                decoration: const InputDecoration(hintText: 'Enter current reading'),
+                decoration:
+                    const InputDecoration(hintText: 'Enter current reading'),
                 keyboardType: TextInputType.number,
               ),
               const SizedBox(height: 10),
-              const Text('Consumption', style: TextStyle(fontWeight: FontWeight.bold)),
+              const Text('Consumption',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
               TextField(
                 controller: consumptionController,
-                decoration: const InputDecoration(hintText: 'Enter consumption'),
+                decoration:
+                    const InputDecoration(hintText: 'Enter consumption'),
                 keyboardType: TextInputType.number,
               ),
               const SizedBox(height: 10),
@@ -218,15 +222,18 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
                 },
               ),
               const SizedBox(height: 10),
-              const Text('Consumption Days', style: TextStyle(fontWeight: FontWeight.bold)),
+              const Text('Consumption Days',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
               TextField(
                 controller: consumptionDaysController,
-                decoration: const InputDecoration(hintText: 'Enter consumption days'),
+                decoration:
+                    const InputDecoration(hintText: 'Enter consumption days'),
                 keyboardType: TextInputType.number,
               ),
               const SizedBox(height: 10),
-              const Text('Amount \$', style: TextStyle(fontWeight: FontWeight.bold)),
+              const Text('Amount \$',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
               TextField(
                 controller: amountController,
@@ -267,13 +274,18 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
     );
   }
 
-  Future<void> updateInvoice(Map<String, dynamic> item, double lastReading, double reading, double consumption, String date, int consumptionDaysController, double amount) async {
+  Future<void> updateInvoice(
+      Map<String, dynamic> item,
+      double lastReading,
+      double reading,
+      double consumption,
+      String date,
+      int consumptionDaysController,
+      double amount) async {
     String id = item['id'];
-    final houseId = item['houseId'];
-    final townId = item['townId'];
     try {
       // Update the document in the reading collection
-      await firestore.collection('reading').doc(id).update({
+      await firestore.collection('readings').doc(id).update({
         'previousReading': lastReading,
         'reading': reading,
         'units': consumption,
@@ -281,19 +293,8 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
         'consumptionDays': consumptionDaysController,
         'amount': amount,
       });
-
-      if (houseId != null) {
-        await firestore.collection('towns').doc(townId).collection('houses').doc(houseId).collection('reading').doc(id).update({
-          'previousReading': lastReading,
-          'reading': reading,
-          'units': consumption,
-          'date': Timestamp.fromDate(DateTime.parse(date)),
-          'consumptionDays': consumptionDaysController,
-          'amount': amount,
-        });
-      }
     } catch (e) {
-      print('Error updating invoice: $e');
+      debugPrint('Error updating invoice: $e');
     }
   }
 
@@ -303,7 +304,10 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
       filteredData = allData;
     } else {
       filteredData = allData.where((item) {
-        return item['houseData']['name'].toString().toLowerCase().contains(query.toLowerCase());
+        return item['houseData']['name']
+            .toString()
+            .toLowerCase()
+            .contains(query.toLowerCase());
       }).toList();
     }
     if (mounted) setState(() {});
@@ -314,7 +318,13 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
     final townId = item['townId'];
     var readingHistory = [];
 
-    var readingsSnapshot = await firestore.collection('towns').doc(townId).collection('houses').doc(houseId).collection('reading').orderBy('date', descending: true).limit(12).get();
+    var readingsSnapshot = await firestore
+        .collection('readings')
+        .orderBy('date', descending: true)
+        .where('townId', isEqualTo: townId)
+        .where('houseId', isEqualTo: houseId)
+        .limit(12)
+        .get();
 
     if (readingsSnapshot.docs.isNotEmpty) {
       // Store all readings
@@ -329,7 +339,8 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
     const headerColor = PdfColor.fromInt(0xff197ba9);
     const bgColor = PdfColor.fromInt(0xffefefef);
 
-    final image = pw.MemoryImage((await rootBundle.load('assets/images/icon.png')).buffer.asUint8List());
+    final image = pw.MemoryImage(
+        (await rootBundle.load('assets/images/icon.png')).buffer.asUint8List());
 
     pdf.addPage(
       pw.Page(
@@ -345,17 +356,20 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
                   child: pw.Row(
                     mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                     children: [
-                      pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, children: [
-                        pw.SizedBox(width: 30, height: 30, child: pw.Image(image)),
-                        pw.SizedBox(width: 10),
-                        pw.Text(
-                          'AguaMED',
-                          style: const pw.TextStyle(
-                            fontSize: 16,
-                            color: PdfColors.white,
-                          ),
-                        ),
-                      ]),
+                      pw.Row(
+                          mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                          children: [
+                            pw.SizedBox(
+                                width: 30, height: 30, child: pw.Image(image)),
+                            pw.SizedBox(width: 10),
+                            pw.Text(
+                              'AguaMED',
+                              style: const pw.TextStyle(
+                                fontSize: 16,
+                                color: PdfColors.white,
+                              ),
+                            ),
+                          ]),
                       pw.Column(
                         crossAxisAlignment: pw.CrossAxisAlignment.start,
                         children: [
@@ -416,7 +430,11 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
                   headers: ['Month', 'Consumption (m³)', 'Amount (\$)'],
                   data: List.generate(readingHistory.length, (index) {
                     var data = readingHistory[index];
-                    return [dateFromTimestamp(data['date']), data['units'], data['amount']];
+                    return [
+                      dateFromTimestamp(data['date']),
+                      data['units'],
+                      data['amount']
+                    ];
                   }),
                 ),
                 pw.SizedBox(height: 16),
@@ -433,7 +451,8 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
                 pw.SizedBox(height: 8),
                 pw.Padding(
                   padding: const pw.EdgeInsets.symmetric(horizontal: 8),
-                  child: pw.Text('Previous Reading: ${item['previousReading']}'),
+                  child:
+                      pw.Text('Previous Reading: ${item['previousReading']}'),
                 ),
                 pw.Padding(
                   padding: const pw.EdgeInsets.symmetric(horizontal: 8),
@@ -496,204 +515,232 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
   Widget build(BuildContext context) {
     bool isTablet = ResponsiveBreakpoints.of(context).largerThan(TABLET);
     return Scaffold(
-      appBar: isTablet ? null : const CustomAppBar(title: 'Invoices', showButton: true),
-      body: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          isTablet ? const CustomDrawer() : Container(),
-          Expanded(
-            child: SingleChildScrollView(
-              scrollDirection: Axis.vertical,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  isTablet ? const CustomAppBar(title: 'Invoices', showButton: false) : Container(),
-                  Padding(
-                    padding: EdgeInsets.symmetric(horizontal: p),
-                    child: Column(
-                      children: [
-                        const SizedBox(height: 30),
-                        Container(
-                          height: 95,
-                          width: width(context),
-                          decoration: BoxDecoration(
-                            color: greyColor,
-                            borderRadius: BorderRadius.circular(radius),
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        'Town',
-                                        style: TextStyle(fontWeight: FontWeight.bold, color: darkGreyColor),
-                                      ),
-                                      const SizedBox(height: 10),
-                                      Container(
-                                        height: 46,
-                                        decoration: BoxDecoration(
-                                          borderRadius: BorderRadius.circular(radius),
-                                          border: Border.all(
-                                            color: borderColor,
+      drawer: isTablet ? Container() : const CustomDrawer(),
+      appBar: isTablet
+          ? const CustomAppBar(title: 'Invoices', showButton: true)
+          : const CustomAppBar(title: 'Invoices', showButton: true),
+      body: Consumer<AdminInvoiceProvider>(
+        builder: (context, provider, child) {
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.vertical,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Padding(
+                        padding: EdgeInsets.symmetric(horizontal: p),
+                        child: Column(
+                          children: [
+                            const SizedBox(height: 30),
+                            Container(
+                              height: 95,
+                              width: width(context),
+                              decoration: BoxDecoration(
+                                color: greyColor,
+                                borderRadius: BorderRadius.circular(radius),
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 12.0, vertical: 8),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            'Town',
+                                            style: TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                color: darkGreyColor),
                                           ),
-                                        ),
-                                        child: DropdownButtonFormField(
-                                          items: allTowns.map((town) {
-                                            return DropdownMenuItem(
-                                              value: town,
-                                              child: Text(town['name']),
-                                            );
-                                          }).toList(),
-                                          onChanged: (_) {
-                                            _selectedTown = _;
-                                            if (mounted) setState(() {});
-                                            loadData();
-                                          },
-                                          value: _selectedTown,
-                                          decoration: InputDecoration(
-                                            filled: true,
-                                            fillColor: Colors.grey[200],
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                SizedBox(width: width(context) * 0.01),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        'House',
-                                        style: TextStyle(fontWeight: FontWeight.bold, color: darkGreyColor),
-                                      ),
-                                      const SizedBox(height: 10),
-                                      SizedBox(
-                                        height: 45,
-                                        child: TextField(
-                                          controller: searchController,
-                                          decoration: InputDecoration(
-                                            hintText: "Search by house Id",
-                                            prefixIcon: Icon(
-                                              Icons.search_rounded,
-                                              size: 18,
-                                              color: borderColor,
+                                          const SizedBox(height: 10),
+                                          Container(
+                                            height: 46,
+                                            decoration: BoxDecoration(
+                                              borderRadius:
+                                                  BorderRadius.circular(radius),
+                                              border: Border.all(
+                                                color: borderColor,
+                                              ),
+                                            ),
+                                            child: DropdownButtonFormField(
+                                              items: towns.map((town) {
+                                                return DropdownMenuItem(
+                                                  value: town,
+                                                  child: Text(town['name']),
+                                                );
+                                              }).toList(),
+                                              onChanged: (_) {
+                                                _selectedTown =
+                                                    _ as Map<String, dynamic>;
+                                                if (mounted) setState(() {});
+                                                loadData();
+                                              },
+                                              value: _selectedTown,
+                                              decoration: InputDecoration(
+                                                filled: true,
+                                                fillColor: Colors.grey[200],
+                                              ),
                                             ),
                                           ),
+                                        ],
+                                      ),
+                                    ),
+                                    SizedBox(width: width(context) * 0.01),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            'House',
+                                            style: TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                color: darkGreyColor),
+                                          ),
+                                          const SizedBox(height: 10),
+                                          SizedBox(
+                                            height: 45,
+                                            child: TextField(
+                                              controller: searchController,
+                                              decoration: InputDecoration(
+                                                hintText: "Search by house Id",
+                                                prefixIcon: Icon(
+                                                  Icons.search_rounded,
+                                                  size: 18,
+                                                  color: borderColor,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    SizedBox(width: width(context) * 0.01),
+                                    MouseRegion(
+                                      cursor: SystemMouseCursors.click,
+                                      onEnter: (_) =>
+                                          provider.setSearchHover(true),
+                                      onExit: (_) =>
+                                          provider.setSearchHover(false),
+                                      child: Button(
+                                          color: provider.searchHover
+                                              ? primaryColor
+                                              : secondaryColor,
+                                          borderRadius: radius,
+                                          height: 45,
+                                          width: width(context) / 9,
+                                          text: 'Search',
+                                          fontSize: width(context) * 0.0115,
+                                          onPressed: () {
+                                            filterData();
+                                          }),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+                            provider.isLoading
+                                ? const Center(
+                                    child: CircularProgressIndicator())
+                                : allData.isEmpty
+                                    ? const Center(
+                                        child: Column(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: [
+                                            Icon(
+                                              Icons.receipt_long,
+                                              size: 100,
+                                              color: Colors.grey,
+                                            ),
+                                            SizedBox(height: 20),
+                                            Text(
+                                              'No invoices available',
+                                              style: TextStyle(
+                                                fontSize: 18,
+                                                color: Colors.grey,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      )
+                                    : SizedBox(
+                                        height: 600,
+                                        child: SingleChildScrollView(
+                                          scrollDirection: Axis.horizontal,
+                                          child: DataTable(
+                                            columnSpacing: 10,
+                                            horizontalMargin: 0,
+                                            columns: const [
+                                              DataColumn(
+                                                  label: Text('House No')),
+                                              DataColumn(
+                                                  label: Text('Last Readings')),
+                                              DataColumn(
+                                                  label:
+                                                      Text('Current Readings')),
+                                              DataColumn(
+                                                  label: Text('Consumption')),
+                                              DataColumn(label: Text('Date')),
+                                              DataColumn(label: Text('Amount')),
+                                              DataColumn(
+                                                  label: Text('Export PDF')),
+                                              DataColumn(
+                                                  label: Text('Actions')),
+                                            ],
+                                            rows: getRows(),
+                                          ),
                                         ),
                                       ),
-                                    ],
+                            const SizedBox(height: 16),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                IconButton(
+                                  icon: const Icon(Icons.arrow_back),
+                                  onPressed: currentPage > 0
+                                      ? () => setState(() {
+                                            currentPage--;
+                                          })
+                                      : null,
+                                ),
+                                Text(
+                                  'Page ${currentPage + 1} of $totalPages',
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
                                   ),
                                 ),
-                                SizedBox(width: width(context) * 0.01),
-                                MouseRegion(
-                                  cursor: SystemMouseCursors.click,
-                                  onEnter: (_) => setState(() => searchHover = true),
-                                  onExit: (_) => setState(() => searchHover = false),
-                                  child: Button(
-                                      color: searchHover ? primaryColor : secondaryColor,
-                                      borderRadius: radius,
-                                      height: 45,
-                                      width: width(context) / 9,
-                                      text: 'Search',
-                                      fontSize: width(context) * 0.0115,
-                                      onPressed: () {
-                                        filterData();
-                                      }),
+                                IconButton(
+                                  icon: const Icon(Icons.arrow_forward),
+                                  onPressed: currentPage < totalPages - 1
+                                      ? () => setState(() {
+                                            currentPage++;
+                                          })
+                                      : null,
                                 ),
                               ],
                             ),
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        isLoading
-                            ? const Center(child: CircularProgressIndicator())
-                            : allData.isEmpty
-                                ? const Center(
-                                    child: Column(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        Icon(
-                                          Icons.receipt_long,
-                                          size: 100,
-                                          color: Colors.grey,
-                                        ),
-                                        SizedBox(height: 20),
-                                        Text(
-                                          'No invoices available',
-                                          style: TextStyle(
-                                            fontSize: 18,
-                                            color: Colors.grey,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  )
-                                : SizedBox(
-                                    height: 600,
-                                    child: SingleChildScrollView(
-                                      child: DataTable(
-                                        columnSpacing: 10,
-                                        horizontalMargin: 0,
-                                        columns: const [
-                                          DataColumn(label: Text('House No')),
-                                          DataColumn(label: Text('Last Readings')),
-                                          DataColumn(label: Text('Current Readings')),
-                                          DataColumn(label: Text('Consumption')),
-                                          DataColumn(label: Text('Date')),
-                                          DataColumn(label: Text('Amount')),
-                                          DataColumn(label: Text('Export PDF')),
-                                          DataColumn(label: Text('Actions')),
-                                        ],
-                                        rows: getRows(),
-                                      ),
-                                    ),
-                                  ),
-                        const SizedBox(height: 16),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            IconButton(
-                              icon: const Icon(Icons.arrow_back),
-                              onPressed: currentPage > 0
-                                  ? () => setState(() {
-                                        currentPage--;
-                                      })
-                                  : null,
-                            ),
-                            Text(
-                              'Page ${currentPage + 1} of $totalPages',
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.arrow_forward),
-                              onPressed: currentPage < totalPages - 1
-                                  ? () => setState(() {
-                                        currentPage++;
-                                      })
-                                  : null,
-                            ),
+                            const SizedBox(height: 20),
                           ],
                         ),
-                        const SizedBox(height: 20),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
-            ),
-          ),
-        ],
+            ],
+          );
+        },
       ),
     );
   }
@@ -726,7 +773,8 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
                     children: [
                       Text(
                         'Export',
-                        style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                            color: primaryColor, fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(width: 5),
                       Image.asset(

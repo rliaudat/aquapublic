@@ -1,3 +1,5 @@
+import 'package:agua_med/_services/house_services.dart';
+import 'package:agua_med/models/house.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
@@ -8,6 +10,9 @@ import '../Reuseable.dart';
 class AddUpdateHouses extends StatefulWidget {
   final String? houseId;
   final String? houseName;
+  final int? cohabitants;
+  final String? meterNumber;
+  final String? houseType;
   final String townId;
   final String townName;
 
@@ -15,6 +20,9 @@ class AddUpdateHouses extends StatefulWidget {
     super.key,
     this.houseId,
     this.houseName,
+    this.cohabitants,
+    this.meterNumber,
+    this.houseType,
     required this.townId,
     required this.townName,
   });
@@ -28,11 +36,16 @@ class _AddUpdateHousesState extends State<AddUpdateHouses> {
 
   var town = TextEditingController();
   var house = TextEditingController();
+  String? cohabitants;
+  var meterNumber = TextEditingController();
+  String? houseType;
   bool addHover = false;
 
   goAuth() {
     if (house.text.isEmpty) {
       showToast(context, msg: 'AddUpdateHouses.pleaseEnterHouseName'.tr());
+    } else if (meterNumber.text.isEmpty) {
+      showToast(context, msg: 'AddUpdateHouses.pleaseEnterMeterNumber'.tr());
     } else {
       if (widget.houseId != null) {
         doUpdate();
@@ -43,10 +56,15 @@ class _AddUpdateHousesState extends State<AddUpdateHouses> {
   }
 
   doUpdate() {
-    var obj = {'name': house.text};
+    var obj = {
+      'name': house.text,
+      'cohabitants': cohabitants == null ? null : int.tryParse(cohabitants!),
+      'meterNumber': meterNumber.text,
+      'houseType': houseType,
+    };
     try {
       showLoader(context, 'AddUpdateHouses.justAMoment'.tr());
-      firestore.collection('towns').doc(widget.townId).collection('houses').doc(widget.houseId).update(obj);
+      HouseServices.update(widget.houseId!, obj);
       pop(context);
       pop(context);
       showToast(context, msg: 'AddUpdateHouses.houseUpdatedSuccessfully'.tr());
@@ -56,10 +74,23 @@ class _AddUpdateHousesState extends State<AddUpdateHouses> {
   }
 
   doCreate() async {
-    var obj = {'name': house.text, 'createdAt': FieldValue.serverTimestamp(), 'isDelete': false};
     try {
       showLoader(context, 'AddUpdateHouses.justAMoment'.tr());
-      await firestore.collection('towns').doc(widget.townId).collection('houses').doc().set(obj);
+      HouseServices.create(
+        context,
+        House(
+          id: '',
+          name: house.text,
+          townID: widget.townId,
+          cohabitants: cohabitants == null ? null : int.tryParse(cohabitants!),
+          meterNumber: meterNumber.text,
+          isDelete: false,
+          lastReading: null,
+          houseType: houseType,
+          createdAt: Timestamp.now(),
+          updatedAt: Timestamp.now(),
+        ),
+      );
       pop(context);
       pop(context);
       showToast(context, msg: 'AddUpdateHouses.houseAddedSuccessfully'.tr());
@@ -68,28 +99,42 @@ class _AddUpdateHousesState extends State<AddUpdateHouses> {
     }
   }
 
-  addOrUpdateHouse() async {
-    if (house.text.isNotEmpty) {
-      final townQuery = await FirebaseFirestore.instance.collection('towns').where('name', isEqualTo: town.text).get();
+  // addOrUpdateHouse() async {
+  //   if (house.text.isNotEmpty) {
+  //     final townQuery = await FirebaseFirestore.instance
+  //         .collection('towns')
+  //         .where('name', isEqualTo: town.text)
+  //         .get();
 
-      if (townQuery.docs.isNotEmpty) {
-        final townDoc = townQuery.docs.first;
+  //     if (townQuery.docs.isNotEmpty) {
+  //       final townDoc = townQuery.docs.first;
 
-        final houseRef = widget.houseId != null ? townDoc.reference.collection('houses').doc(widget.houseId) : townDoc.reference.collection('houses').doc();
+  //       final houseRef = widget.houseId != null
+  //           ? townDoc.reference.collection('houses').doc(widget.houseId)
+  //           : townDoc.reference.collection('houses').doc();
 
-        await houseRef.set({'name': house.text, 'createdAt': FieldValue.serverTimestamp(), 'isDelete': false});
+  //       await houseRef.set({
+  //         'name': house.text,
+  //         'createdAt': FieldValue.serverTimestamp(),
+  //         'isDelete': false
+  //       });
 
-        pop(context);
-        showToast(context, msg: 'AddUpdateHouses.houseAndReadingAddedUpdatedSuccessfully'.tr(), duration: 3);
-      }
-    }
-  }
+  //       pop(context);
+  //       showToast(context,
+  //           msg: 'AddUpdateHouses.houseAndReadingAddedUpdatedSuccessfully'.tr(),
+  //           duration: 3);
+  //     }
+  //   }
+  // }
 
   @override
   void initState() {
     town.text = widget.townName;
     if (widget.houseName != null) {
       house.text = widget.houseName!;
+      cohabitants = widget.cohabitants?.toString();
+      meterNumber.text = widget.meterNumber!;
+      houseType = widget.houseType;
     }
     super.initState();
   }
@@ -119,7 +164,9 @@ class _AddUpdateHousesState extends State<AddUpdateHouses> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        widget.houseId == null ? 'AddUpdateHouses.addHouse'.tr() : 'AddUpdateHouses.editHouse'.tr(),
+                        widget.houseId == null
+                            ? 'AddUpdateHouses.addHouse'.tr()
+                            : 'AddUpdateHouses.editHouse'.tr(),
                         style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
@@ -127,7 +174,8 @@ class _AddUpdateHousesState extends State<AddUpdateHouses> {
                       ),
                       GestureDetector(
                         onTap: () => Navigator.pop(context),
-                        child: const Icon(Icons.close_outlined, color: Colors.black),
+                        child: const Icon(Icons.close_outlined,
+                            color: Colors.black),
                       ),
                     ],
                   ),
@@ -158,6 +206,66 @@ class _AddUpdateHousesState extends State<AddUpdateHouses> {
                       prefixIcon: Icon(Icons.home, color: borderColor),
                     ),
                   ),
+                  SizedBox(height: p),
+                  Text(
+                    'AddUpdateHouses.cohabitants'.tr(),
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  DropdownButtonFormField(
+                    items: ['2', '3', '4', '5', '6'].map((value) {
+                      return DropdownMenuItem(
+                        value: value,
+                        child: Text(value),
+                      );
+                    }).toList(),
+                    onChanged: (_) {
+                      cohabitants = _;
+                      if (mounted) setState(() {});
+                    },
+                    value: cohabitants,
+                    decoration: InputDecoration(
+                      filled: true,
+                      fillColor: Colors.grey[200],
+                    ),
+                  ),
+                  SizedBox(height: p),
+                  Text(
+                    'AddUpdateHouses.meterNumber'.tr(),
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: meterNumber,
+                    decoration: InputDecoration(
+                      hintText: 'AddUpdateHouses.enterMeterNumber'.tr(),
+                      prefixIcon: Icon(Icons.home, color: borderColor),
+                    ),
+                  ),
+                  SizedBox(height: p),
+                  Text(
+                    'AddUpdateHouses.houseType'.tr(),
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  DropdownButtonFormField(
+                    items: ['Living', 'Weekend', ' Under Construction', 'Lot']
+                        .map((value) {
+                      return DropdownMenuItem(
+                        value: value,
+                        child: Text(value),
+                      );
+                    }).toList(),
+                    onChanged: (_) {
+                      houseType = _;
+                      if (mounted) setState(() {});
+                    },
+                    value: houseType,
+                    decoration: InputDecoration(
+                      filled: true,
+                      fillColor: Colors.grey[200],
+                    ),
+                  ),
                   const SizedBox(height: 20),
                   MouseRegion(
                     cursor: SystemMouseCursors.click,
@@ -167,7 +275,9 @@ class _AddUpdateHousesState extends State<AddUpdateHouses> {
                       color: addHover ? primaryColor : secondaryColor,
                       height: 50,
                       width: double.infinity,
-                      text: widget.houseId == null ? 'AddUpdateHouses.add'.tr() : 'AddUpdateHouses.update'.tr(),
+                      text: widget.houseId == null
+                          ? 'AddUpdateHouses.add'.tr()
+                          : 'AddUpdateHouses.update'.tr(),
                       onPressed: () => goAuth(),
                     ),
                   ),

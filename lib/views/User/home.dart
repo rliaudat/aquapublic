@@ -1,15 +1,19 @@
-import 'dart:async';
+// ignore_for_file: curly_braces_in_flow_control_structures
 
 import 'package:agua_med/Components/Drawer.dart';
-import 'package:agua_med/_helpers/global.dart';
 import 'package:agua_med/_helpers/helper.dart';
 import 'package:agua_med/_helpers/notification.dart';
+import 'package:agua_med/_services/house_services.dart';
 import 'package:agua_med/loading.dart';
+import 'package:agua_med/models/house.dart';
+import 'package:agua_med/providers/user_home_provider.dart';
+import 'package:agua_med/providers/user_provider.dart';
 import 'package:agua_med/theme.dart';
 import 'package:agua_med/views/Inspector/meter_reading.dart';
 import 'package:agua_med/views/Inspector/search_house_bill.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:responsive_framework/responsive_framework.dart';
 import 'package:easy_localization/easy_localization.dart';
 
@@ -24,51 +28,18 @@ class _HomeScreenState extends State<HomeScreen> {
   FirebaseFirestore instance = FirebaseFirestore.instance;
   var notification = NotificationClass();
   var searchController = TextEditingController();
-  String searchValue = "";
-  bool showPendingOnly = false;
-
-  List allData = [];
-  List filteredData = [];
 
   @override
   void initState() {
     notification.notificationListener();
-    Timer(const Duration(milliseconds: 10), () {
-      loadData();
-    });
+    context.read<UserHomeProvider>().setSelectedTown(
+          context.read<UserProvider>().user!.town,
+        );
     super.initState();
   }
 
-  void loadData() {
-    selectedTown = userSD['town'];
-    showPendingOnly = false;
-    if (mounted) setState(() {});
-    instance.collection('towns').doc(selectedTown['id']).collection('houses').where('isDelete', isEqualTo: false).orderBy('createdAt').snapshots().listen((housesSnapshot) {
-      List<Map<String, dynamic>> tempAllData = [];
-
-      for (var houseDoc in housesSnapshot.docs) {
-        Map<String, dynamic> houseData = houseDoc.data();
-        houseData['id'] = houseDoc.id;
-        houseData['lastReading'] = null;
-
-        instance.collection('towns').doc(selectedTown['id']).collection('houses').doc(houseDoc.id).collection('reading').orderBy('date', descending: true).limit(1).snapshots().listen((readingsSnapshot) {
-          if (readingsSnapshot.docs.isNotEmpty) {
-            houseData['lastReading'] = {'id': readingsSnapshot.docs.first.id, ...readingsSnapshot.docs.first.data()};
-          } else {
-            houseData['lastReading'] = null;
-          }
-          tempAllData = tempAllData.where((item) => item['id'] != houseDoc.id).toList();
-          tempAllData.add(houseData);
-          allData = tempAllData;
-          filteredData = allData;
-          if (mounted) setState(() {});
-        });
-      }
-    });
-  }
-
-  bool checkReading(item) {
-    var lastReading = item['lastReading'];
+  bool checkReading(House item) {
+    var lastReading = item.lastReading;
     if (lastReading == null || lastReading.isEmpty) {
       return false;
     }
@@ -76,139 +47,192 @@ class _HomeScreenState extends State<HomeScreen> {
       Timestamp timestamp = lastReading['date'];
       DateTime lastReadingDate = timestamp.toDate();
       DateTime now = DateTime.now();
-      bool isInCurrentMonth = lastReadingDate.year == now.year && lastReadingDate.month == now.month;
-      return isInCurrentMonth;
+      bool isInCurrentMonth = lastReadingDate.year == now.year &&
+          lastReadingDate.month == now.month;
+      return isInCurrentMonth
+          ? lastReading['measurementStatus'] == 'completed'
+          : false;
     }
 
     return false;
   }
 
-  void searchHouse(String query) {
-    if (query.isEmpty) {
-      filteredData = List.from(allData);
-    } else {
-      filteredData = allData.where((data) => data['name'].toLowerCase().contains(query.toLowerCase())).toList();
-    }
-    if (mounted) setState(() {});
-  }
-
-  showPending(pending) {
-    unFocus(context);
-    pending ? filteredData = allData.where((item) => !checkReading(item)).toList() : filteredData = allData;
-  }
-
   @override
   Widget build(BuildContext context) {
     bool isTablet = ResponsiveBreakpoints.of(context).largerThan(TABLET);
-    return GestureDetector(
-      onTap: () => unFocus(context),
-      child: Scaffold(
-        appBar: isTablet
-            ? null
-            : AppBar(
-                backgroundColor: primaryColor,
-                title: const Text("Dashboard").tr(),
-              ),
-        drawer: isTablet ? null : const CustomDrawer(),
-        body: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            isTablet ? const CustomDrawer() : Container(),
-            Expanded(
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    isTablet
-                        ? AppBar(
-                            centerTitle: true,
-                            automaticallyImplyLeading: false,
-                            title: const Text('Dashboard').tr(),
-                            backgroundColor: primaryColor,
-                          )
-                        : Container(),
-                    Padding(
-                      padding: EdgeInsets.symmetric(horizontal: p),
-                      child: Column(
-                        children: [
-                          const SizedBox(height: 20),
-                          TextField(
-                            controller: searchController,
-                            decoration: InputDecoration(
-                              hintText: 'HomeScreen.searchByTownName'.tr(),
-                              prefixIcon: const Icon(Icons.search),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              filled: true,
-                              fillColor: whiteColor,
-                              contentPadding: const EdgeInsets.symmetric(vertical: 8),
-                            ),
-                            onChanged: (value) => searchHouse(value),
-                          ),
-                          const SizedBox(height: 5),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return PopScope(
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) {
+          context.read<UserHomeProvider>().reset();
+        }
+      },
+      child: GestureDetector(
+        onTap: () => unFocus(context),
+        child: Consumer<UserHomeProvider>(builder: (context, provider, child) {
+          return Scaffold(
+            appBar: isTablet
+                ? null
+                : AppBar(
+                    backgroundColor: primaryColor,
+                    title: const Text("Dashboard").tr(),
+                  ),
+            drawer: isTablet ? null : const CustomDrawer(),
+            body: StreamBuilder(
+                stream: HouseServices.houseReadingStream(
+                  provider.selectedTown['id'],
+                ),
+                builder: (context, snapshot) {
+                  return Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      isTablet ? const CustomDrawer() : Container(),
+                      Expanded(
+                        child: SingleChildScrollView(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
-                                'HomeScreen.showPendingOnly',
-                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-                              ).tr(),
-                              Switch(
-                                value: showPendingOnly,
-                                activeColor: primaryColor,
-                                inactiveTrackColor: darkGreyColor,
-                                onChanged: (value) {
-                                  showPendingOnly = value;
-                                  showPending(showPendingOnly);
-                                  if (mounted) setState(() {});
-                                },
+                              isTablet
+                                  ? AppBar(
+                                      centerTitle: true,
+                                      automaticallyImplyLeading: false,
+                                      title: const Text('Dashboard').tr(),
+                                      backgroundColor: primaryColor,
+                                    )
+                                  : Container(),
+                              Padding(
+                                padding: EdgeInsets.symmetric(horizontal: p),
+                                child: Column(
+                                  children: [
+                                    const SizedBox(height: 20),
+                                    TextField(
+                                      controller: searchController,
+                                      decoration: InputDecoration(
+                                        hintText:
+                                            'HomeScreen.searchByTownName'.tr(),
+                                        prefixIcon: const Icon(Icons.search),
+                                        border: OutlineInputBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(8),
+                                        ),
+                                        filled: true,
+                                        fillColor: whiteColor,
+                                        contentPadding:
+                                            const EdgeInsets.symmetric(
+                                          vertical: 8,
+                                        ),
+                                      ),
+                                      onChanged: (value) =>
+                                          provider.setSearchValue(value),
+                                    ),
+                                    const SizedBox(height: 5),
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        const Text(
+                                          'HomeScreen.showPendingOnly',
+                                          style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 15),
+                                        ).tr(),
+                                        Switch(
+                                          value: provider.showPendingOnly,
+                                          activeColor: primaryColor,
+                                          inactiveTrackColor: darkGreyColor,
+                                          onChanged: (value) {
+                                            provider.setShoePendingOnly(value);
+                                          },
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 10),
+                                    if (snapshot.connectionState ==
+                                            ConnectionState.done &&
+                                        snapshot.data == null)
+                                      Center(
+                                        child: Column(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.center,
+                                          children: [
+                                            const SizedBox(height: 50),
+                                            Icon(Icons.home_work_rounded,
+                                                size: 50, color: primaryColor),
+                                            SizedBox(height: p),
+                                            const Text(
+                                              'HomeScreen.noHouseFoundInThisTown',
+                                              style: TextStyle(
+                                                  fontWeight: FontWeight.bold),
+                                            ).tr(),
+                                            const SizedBox(height: 50),
+                                          ],
+                                        ),
+                                      ),
+                                    Wrap(
+                                      children: List.generate(
+                                        snapshot.data?.length ?? 0,
+                                        (index) {
+                                          House item = snapshot.data![index];
+                                          bool hasReadings = checkReading(item);
+                                          if (provider.searchValue == null ||
+                                              provider.searchValue == '') {
+                                            if (item.id ==
+                                                context
+                                                    .read<UserProvider>()
+                                                    .user!
+                                                    .house['id']) {
+                                              if (!provider.showPendingOnly ||
+                                                  !hasReadings) {
+                                                return buildHouseCard(
+                                                  item,
+                                                  hasReadings,
+                                                );
+                                              } else {
+                                                return const SizedBox();
+                                              }
+                                            } else {
+                                              return const SizedBox();
+                                            }
+                                          } else {
+                                            if (item.name
+                                                .toLowerCase()
+                                                .contains(provider.searchValue!
+                                                    .toLowerCase())) {
+                                              if (!provider.showPendingOnly ||
+                                                  !hasReadings) {
+                                                return buildHouseCard(
+                                                  item,
+                                                  hasReadings,
+                                                );
+                                              } else {
+                                                return const SizedBox();
+                                              }
+                                            } else {
+                                              return const SizedBox();
+                                            }
+                                          }
+                                        },
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 10),
-                          if (filteredData.isEmpty)
-                            Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  const SizedBox(height: 50),
-                                  Icon(Icons.home_work_rounded, size: 50, color: primaryColor),
-                                  SizedBox(height: p),
-                                  const Text(
-                                    'HomeScreen.noHouseFoundInThisTown',
-                                    style: TextStyle(fontWeight: FontWeight.bold),
-                                  ).tr(),
-                                  const SizedBox(height: 50),
-                                ],
-                              ),
-                            ),
-                          Wrap(
-                            children: List.generate(
-                              filteredData.length,
-                              (index) {
-                                dynamic item = filteredData[index];
-                                bool hasReadings = checkReading(item);
-                                return buildHouseCard(item, hasReadings);
-                              },
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
+                    ],
+                  );
+                }),
+          );
+        }),
       ),
     );
   }
 
-  Widget buildHouseCard(dynamic data, bool hasReadings) {
+  Widget buildHouseCard(House data, bool hasReadings) {
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -221,43 +245,60 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                if (data['lastReading'] != null) ...[
+                if (data.lastReading != null) ...[
                   _buildConsumptionRow(data),
                   const SizedBox(height: 15),
                   buildInfoRow(
                     icon: Icons.calendar_today,
                     label: 'HomeScreen.date',
-                    value: dateFromTimestamp(data['lastReading']['date']),
+                    value: data.lastReading?['date'] == null
+                        ? 'No Available'
+                        : dateFromTimestamp(data.lastReading!['date']),
                   ),
                   const SizedBox(height: 10),
                   buildInfoRow(
                     icon: Icons.speed,
                     label: 'HomeScreen.reading',
-                    value: data['lastReading']['reading'],
+                    value: data.lastReading!['reading'].toStringAsFixed(2),
                   ),
                   const SizedBox(height: 10),
                   buildInfoRow(
                     icon: Icons.bolt,
                     label: 'HomeScreen.calcConsumption',
-                    value: data['lastReading']['units'].toString(),
+                    value: data.lastReading!['units'].toStringAsFixed(2),
                   ),
                   const SizedBox(height: 10),
                   buildInfoRow(
                     icon: Icons.history_toggle_off,
                     label: 'HomeScreen.lastConsumption',
-                    value: data['lastReading']['previousUnit'].toString(),
+                    value:
+                        data.lastReading!['previousUnits'].toStringAsFixed(2),
                   ),
                   const SizedBox(height: 10),
                   buildInfoRow(
                     icon: Icons.calendar_today_outlined,
                     label: 'HomeScreen.consumptionDays',
-                    value: data['lastReading']['consumptionDays'].toString(),
+                    value: data.lastReading!['consumptionDays'].toString(),
                   ),
                   const SizedBox(height: 10),
                   buildInfoRow(
                     icon: Icons.attach_money,
                     label: 'HomeScreen.amount',
-                    value: '\$${data['lastReading']['amount']}',
+                    value: '\$${data.lastReading!['amount']}',
+                  ),
+                  const SizedBox(height: 10),
+                  buildInfoRow(
+                    icon: Icons.water_drop,
+                    label: 'SearchHouseScreen.consumption',
+                    value: data.cohabitants == null || data.houseType == null
+                        ? ''
+                        : consumptionLevel(
+                            data.houseType!,
+                            data.cohabitants!,
+                            double.parse(
+                              data.lastReading!['units'].toStringAsFixed(2),
+                            ),
+                          ),
                   ),
                 ],
               ],
@@ -269,7 +310,94 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildCardHeader(dynamic data, bool hasReadings) {
+  String consumptionLevel(
+      String houseType, int cohabitants, double consumption) {
+    if (houseType == "Living") {
+      switch (cohabitants) {
+        case 2:
+          if (consumption < 22) {
+            return "Low";
+          } else if (consumption <= 39)
+            return "Medium";
+          else
+            return "High";
+        case 3:
+          if (consumption < 27) {
+            return "Low";
+          } else if (consumption <= 45)
+            return "Medium";
+          else
+            return "High";
+        case 4:
+          if (consumption < 33) {
+            return "Low";
+          } else if (consumption <= 63)
+            return "Medium";
+          else
+            return "High";
+        case 5:
+          if (consumption < 39) {
+            return "Low";
+          } else if (consumption <= 84)
+            return "Medium";
+          else
+            return "High";
+        case 6:
+          if (consumption < 45) {
+            return "Low";
+          } else if (consumption <= 108)
+            return "Medium";
+          else
+            return "High";
+        default:
+          return "Unknown"; // or handle invalid cohabitants number
+      }
+    } else if (houseType == "Weekend") {
+      switch (cohabitants) {
+        case 2:
+          if (consumption < 5.84) {
+            return "Low";
+          } else if (consumption <= 10.4)
+            return "Medium";
+          else
+            return "High";
+        case 3:
+          if (consumption < 7.2) {
+            return "Low";
+          } else if (consumption <= 12)
+            return "Medium";
+          else
+            return "High";
+        case 4:
+          if (consumption < 8.8) {
+            return "Low";
+          } else if (consumption <= 16.8)
+            return "Medium";
+          else
+            return "High";
+        case 5:
+          if (consumption < 10.4) {
+            return "Low";
+          } else if (consumption <= 22.4)
+            return "Medium";
+          else
+            return "High";
+        case 6:
+          if (consumption < 12) {
+            return "Low";
+          } else if (consumption <= 28.8)
+            return "Medium";
+          else
+            return "High";
+        default:
+          return "Unknown"; // or handle invalid cohabitants number
+      }
+    } else {
+      return "Unknown"; // or handle invalid house type
+    }
+  }
+
+  Widget _buildCardHeader(House data, bool hasReadings) {
     return Container(
       padding: EdgeInsets.all(p),
       decoration: BoxDecoration(
@@ -283,7 +411,7 @@ class _HomeScreenState extends State<HomeScreen> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
-            data['name'],
+            data.name,
             style: const TextStyle(
               color: Colors.white,
               fontSize: 18,
@@ -302,8 +430,10 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildConsumptionRow(data) {
-    var consumption = (double.parse(data['lastReading']['reading'].toString()) - double.parse(data['lastReading']['previousReading'].toString())).toString();
+  Widget _buildConsumptionRow(House data) {
+    var consumption = (double.parse(data.lastReading!['reading'].toString()) -
+            double.parse(data.lastReading!['previousReading'].toString()))
+        .toStringAsFixed(2);
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
@@ -321,7 +451,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildCardFooter(dynamic data, bool hasReadings) {
+  Widget _buildCardFooter(House data, bool hasReadings) {
     return Padding(
       padding: EdgeInsets.all(p),
       child: Row(
@@ -329,7 +459,15 @@ class _HomeScreenState extends State<HomeScreen> {
           Expanded(
             child: ElevatedButton.icon(
               onPressed: () {
-                Navigator.push(context, MaterialPageRoute(builder: (context) => MeterReadingScreen(data: data, hasReadings: hasReadings)));
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => MeterReadingScreen(
+                      data: data,
+                      hasReadings: hasReadings,
+                    ),
+                  ),
+                );
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: primaryColor,
@@ -353,7 +491,12 @@ class _HomeScreenState extends State<HomeScreen> {
           Expanded(
             child: ElevatedButton.icon(
               onPressed: () {
-                Navigator.push(context, MaterialPageRoute(builder: (context) => const SearchHouseScreen()));
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const SearchHouseScreen(),
+                  ),
+                );
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: primaryColor,
@@ -378,7 +521,8 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget buildInfoRow({required IconData icon, required String label, required String value}) {
+  Widget buildInfoRow(
+      {required IconData icon, required String label, required String value}) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [

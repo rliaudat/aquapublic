@@ -2,16 +2,16 @@ import 'package:agua_med/Components/Drawer.dart';
 import 'package:agua_med/Initial/auth/login.dart';
 import 'package:agua_med/_helpers/notification.dart';
 import 'package:agua_med/loading.dart';
+import 'package:agua_med/providers/user_provider.dart';
 import 'package:agua_med/theme.dart';
 import 'package:agua_med/Components/Reuseable.dart';
 import 'package:agua_med/views/Admin/house.dart';
 import 'package:agua_med/views/Admin/user_registration.dart';
 import 'package:agua_med/views/Admin/users/all_users.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:responsive_framework/responsive_framework.dart';
 import 'package:easy_localization/easy_localization.dart';
-
-import '../../_helpers/global.dart';
 
 class ManagerHomeScreen extends StatefulWidget {
   const ManagerHomeScreen({super.key});
@@ -35,14 +35,18 @@ class _ManagerHomeScreenState extends State<ManagerHomeScreen> {
     return GestureDetector(
       onTap: () => unFocus(context),
       child: Scaffold(
-        appBar: isTablet ? null : AppBar(backgroundColor: primaryColor, title: Text("ManagerHomeScreen.townManager".tr())),
+        appBar: isTablet
+            ? null
+            : AppBar(
+                backgroundColor: primaryColor,
+                title: Text("ManagerHomeScreen.townManager".tr())),
         drawer: isTablet ? null : const CustomDrawer(),
         body: Row(
           mainAxisAlignment: MainAxisAlignment.start,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             isTablet ? const CustomDrawer() : Container(),
-            Expanded(
+            Flexible(
               child: SingleChildScrollView(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.start,
@@ -72,7 +76,13 @@ class _ManagerHomeScreenState extends State<ManagerHomeScreen> {
                                     text: 'ManagerHomeScreen.houseOwner'.tr(),
                                     height: p,
                                     size: 50,
-                                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const AllUsersScreen(role: 'HouseOwner', header: 'House Owner'))),
+                                    onTap: () => Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                            builder: (context) =>
+                                                const AllUsersScreen(
+                                                    role: 'HouseOwner',
+                                                    header: 'House Owner'))),
                                   ),
                                 ),
                               ),
@@ -85,7 +95,13 @@ class _ManagerHomeScreenState extends State<ManagerHomeScreen> {
                                     text: 'ManagerHomeScreen.inspectors'.tr(),
                                     height: 6,
                                     size: 60,
-                                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const AllUsersScreen(role: 'Inspector', header: 'Inspector'))),
+                                    onTap: () => Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                            builder: (context) =>
+                                                const AllUsersScreen(
+                                                    role: 'Inspector',
+                                                    header: 'Inspector'))),
                                   ),
                                 ),
                               ),
@@ -100,10 +116,15 @@ class _ManagerHomeScreenState extends State<ManagerHomeScreen> {
                                   cursor: SystemMouseCursors.click,
                                   child: AdminMenu(
                                     image: 'assets/images/registeration.png',
-                                    text: 'ManagerHomeScreen.userRegistrations'.tr(),
+                                    text: 'ManagerHomeScreen.userRegistrations'
+                                        .tr(),
                                     height: p,
                                     size: 50,
-                                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const UserRegistrationScreen())),
+                                    onTap: () => Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                            builder: (context) =>
+                                                const UserRegistrationScreen())),
                                   ),
                                 ),
                               ),
@@ -116,7 +137,21 @@ class _ManagerHomeScreenState extends State<ManagerHomeScreen> {
                                     text: 'ManagerHomeScreen.houses'.tr(),
                                     height: 8,
                                     size: 55,
-                                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => HousesScreen(town: userSD['town']['name'], townId: userSD['town']['id']))),
+                                    onTap: () => Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => HousesScreen(
+                                          town: context
+                                              .read<UserProvider>()
+                                              .user
+                                              ?.town['name'],
+                                          townID: context
+                                              .read<UserProvider>()
+                                              .user
+                                              ?.town['id'],
+                                        ),
+                                      ),
+                                    ),
                                   ),
                                 ),
                               ),
@@ -129,7 +164,12 @@ class _ManagerHomeScreenState extends State<ManagerHomeScreen> {
                               height: 50,
                               text: 'ManagerHomeScreen.logout'.tr(),
                               onPressed: () {
-                                Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => const LoginScreen()), (route) => false);
+                                Navigator.pushAndRemoveUntil(
+                                    context,
+                                    MaterialPageRoute(
+                                        builder: (context) =>
+                                            const LoginScreen()),
+                                    (route) => false);
                               },
                             ),
                         ],
