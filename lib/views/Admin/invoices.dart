@@ -28,15 +28,42 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
   // Variables
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
 
-  List towns = [];
-  List allData = [];
-  List filteredData = [];
+  StreamSubscription<QuerySnapshot<Map<String, dynamic>>>?
+      _readingsSubscription;
+  List<Map<String, dynamic>> towns = [];
+  List<Map<String, dynamic>> allData = [];
+  List<Map<String, dynamic>> filteredData = [];
   Map<String, dynamic>? _selectedTown;
 
   int currentPage = 0;
   int totalPages = 0;
 
   TextEditingController searchController = TextEditingController();
+
+  Map<String, dynamic>? _sanitizeTown(dynamic rawTown) {
+    if (rawTown is! Map) return null;
+    final townMap = Map<String, dynamic>.from(rawTown);
+    final townId = townMap['id']?.toString();
+    final townName = townMap['name']?.toString();
+    if (townId == null || townId.isEmpty || townName == null || townName.isEmpty) {
+      return null;
+    }
+    return {
+      'id': townId,
+      'name': townName,
+    };
+  }
+
+  List<Map<String, dynamic>> _extractTowns(dynamic rawTown) {
+    if (rawTown is List) {
+      return rawTown
+          .map(_sanitizeTown)
+          .whereType<Map<String, dynamic>>()
+          .toList();
+    }
+    final town = _sanitizeTown(rawTown);
+    return town == null ? [] : [town];
+  }
 
   loadTowns() {
     if (context.read<UserProvider>().user!.role == 'Admin') {
@@ -48,33 +75,62 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
             'name': doc.name,
           };
         }).toList();
-        _selectedTown = towns.first;
-        loadData();
+        if (towns.isNotEmpty) {
+          _selectedTown = towns.first;
+          loadData();
+        } else {
+          allData = [];
+          filteredData = [];
+          totalPages = 0;
+          context.read<AdminInvoiceProvider>().setIsLoading(false);
+        }
       });
     } else if (context.read<UserProvider>().user!.role == 'Manager') {
-      towns.add(context.read<UserProvider>().user!.town);
+      towns = _extractTowns(context.read<UserProvider>().user!.town);
       if (towns.isNotEmpty) {
         _selectedTown = towns.first;
         loadData();
+      } else {
+        allData = [];
+        filteredData = [];
+        totalPages = 0;
+        context.read<AdminInvoiceProvider>().setIsLoading(false);
       }
     } else if (context.read<UserProvider>().user!.role == 'Inspector') {
-      towns.addAll(context.read<UserProvider>().user!.town);
+      towns = _extractTowns(context.read<UserProvider>().user!.town);
       if (towns.isNotEmpty) {
         _selectedTown = towns.first;
         loadData();
+      } else {
+        allData = [];
+        filteredData = [];
+        totalPages = 0;
+        context.read<AdminInvoiceProvider>().setIsLoading(false);
       }
     }
   }
 
   loadData() {
+    if (_selectedTown == null) {
+      allData = [];
+      filteredData = [];
+      totalPages = 0;
+      context.read<AdminInvoiceProvider>().setIsLoading(false);
+      return;
+    }
+
     context.read<AdminInvoiceProvider>().setIsLoading(true);
-    firestore
+    _readingsSubscription?.cancel();
+    _readingsSubscription = firestore
         .collection('readings')
         .where('townId', isEqualTo: _selectedTown?['id'] ?? 'No ID')
         .snapshots()
         .listen((querySnapshot) async {
       final readings = await Future.wait(querySnapshot.docs.map((doc) async {
-        final data = doc.data();
+        final data = {
+          'id': doc.id,
+          ...doc.data(),
+        };
 
         if (data['houseId'] != null) {
           final houseDoc =
@@ -97,6 +153,7 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
       totalPages = (allData.length / 10).ceil();
     }).onError((e) {
       debugPrint('Error loading data: $e');
+      context.read<AdminInvoiceProvider>().setIsLoading(false);
     });
   }
 
@@ -104,6 +161,13 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
   void initState() {
     loadTowns();
     super.initState();
+  }
+
+  @override
+  void dispose() {
+    _readingsSubscription?.cancel();
+    searchController.dispose();
+    super.dispose();
   }
 
   showDeleteConfirmation(Map<String, dynamic> item) {
@@ -304,7 +368,8 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
       filteredData = allData;
     } else {
       filteredData = allData.where((item) {
-        return item['houseData']['name']
+        final houseData = item['houseData'] as Map<String, dynamic>?;
+        return (houseData?['name'] ?? '')
             .toString()
             .toLowerCase()
             .contains(query.toLowerCase());
@@ -574,16 +639,29 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
                                               items: towns.map((town) {
                                                 return DropdownMenuItem(
                                                   value: town,
-                                                  child: Text(town['name']),
+                                                  child: Text(town['name']
+                                                      ?.toString() ??
+                                                      'Unnamed town'),
                                                 );
                                               }).toList(),
-                                              onChanged: (_) {
-                                                _selectedTown =
-                                                    _ as Map<String, dynamic>;
-                                                if (mounted) setState(() {});
-                                                loadData();
-                                              },
-                                              value: _selectedTown,
+                                              onChanged: towns.isEmpty
+                                                  ? null
+                                                  : (_) {
+                                                      if (_ == null) return;
+                                                      _selectedTown =
+                                                          _ as Map<String, dynamic>;
+                                                      if (mounted) {
+                                                        setState(() {});
+                                                      }
+                                                      loadData();
+                                                    },
+                                              value: towns.any((town) =>
+                                                      town['id'] ==
+                                                      _selectedTown?['id'])
+                                                  ? towns.firstWhere((town) =>
+                                                      town['id'] ==
+                                                      _selectedTown?['id'])
+                                                  : null,
                                               decoration: InputDecoration(
                                                 filled: true,
                                                 fillColor: Colors.grey[200],
@@ -651,20 +729,20 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
                             provider.isLoading
                                 ? const Center(
                                     child: CircularProgressIndicator())
-                                : allData.isEmpty
+                                : towns.isEmpty
                                     ? const Center(
                                         child: Column(
                                           mainAxisAlignment:
                                               MainAxisAlignment.center,
                                           children: [
                                             Icon(
-                                              Icons.receipt_long,
+                                              Icons.location_city_outlined,
                                               size: 100,
                                               color: Colors.grey,
                                             ),
                                             SizedBox(height: 20),
                                             Text(
-                                              'No invoices available',
+                                              'No town assigned',
                                               style: TextStyle(
                                                 fontSize: 18,
                                                 color: Colors.grey,
@@ -673,34 +751,56 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
                                           ],
                                         ),
                                       )
-                                    : SizedBox(
-                                        height: 600,
-                                        child: SingleChildScrollView(
-                                          scrollDirection: Axis.horizontal,
-                                          child: DataTable(
-                                            columnSpacing: 10,
-                                            horizontalMargin: 0,
-                                            columns: const [
-                                              DataColumn(
-                                                  label: Text('House No')),
-                                              DataColumn(
-                                                  label: Text('Last Readings')),
-                                              DataColumn(
-                                                  label:
-                                                      Text('Current Readings')),
-                                              DataColumn(
-                                                  label: Text('Consumption')),
-                                              DataColumn(label: Text('Date')),
-                                              DataColumn(label: Text('Amount')),
-                                              DataColumn(
-                                                  label: Text('Export PDF')),
-                                              DataColumn(
-                                                  label: Text('Actions')),
-                                            ],
-                                            rows: getRows(),
+                                    : filteredData.isEmpty
+                                        ? const Center(
+                                            child: Column(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.center,
+                                              children: [
+                                                Icon(
+                                                  Icons.receipt_long,
+                                                  size: 100,
+                                                  color: Colors.grey,
+                                                ),
+                                                SizedBox(height: 20),
+                                                Text(
+                                                  'No invoices available',
+                                                  style: TextStyle(
+                                                    fontSize: 18,
+                                                    color: Colors.grey,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          )
+                                        : SizedBox(
+                                            height: 600,
+                                            child: SingleChildScrollView(
+                                              scrollDirection: Axis.horizontal,
+                                              child: DataTable(
+                                                columnSpacing: 10,
+                                                horizontalMargin: 0,
+                                                columns: const [
+                                                  DataColumn(
+                                                      label: Text('House No')),
+                                                  DataColumn(
+                                                      label: Text('Last Readings')),
+                                                  DataColumn(
+                                                      label:
+                                                          Text('Current Readings')),
+                                                  DataColumn(
+                                                      label: Text('Consumption')),
+                                                  DataColumn(label: Text('Date')),
+                                                  DataColumn(label: Text('Amount')),
+                                                  DataColumn(
+                                                      label: Text('Export PDF')),
+                                                  DataColumn(
+                                                      label: Text('Actions')),
+                                                ],
+                                                rows: getRows(),
+                                              ),
+                                            ),
                                           ),
-                                        ),
-                                      ),
                             const SizedBox(height: 16),
                             Row(
                               mainAxisAlignment: MainAxisAlignment.center,
@@ -714,7 +814,7 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
                                       : null,
                                 ),
                                 Text(
-                                  'Page ${currentPage + 1} of $totalPages',
+                                  'Page ${totalPages == 0 ? 0 : currentPage + 1} of $totalPages',
                                   style: const TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
@@ -751,10 +851,12 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
     List<DataRow> rows = [];
     for (int i = start; i < end && i < filteredData.length; i++) {
       var item = filteredData[i];
+      final houseData = item['houseData'] as Map<String, dynamic>?;
+      final houseName = (houseData?['name'] ?? 'Unknown').toString();
       rows.add(
         DataRow(
           cells: [
-            DataCell(Text(item['houseData']['name'].toString())),
+            DataCell(Text(houseName)),
             DataCell(Text(item['previousReading'].toString())),
             DataCell(Text(item['reading'].toString())),
             DataCell(Text(item['units'].toString())),

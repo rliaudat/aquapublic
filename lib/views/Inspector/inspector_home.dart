@@ -30,9 +30,10 @@ class _InspectorHomeScreenState extends State<InspectorHomeScreen> {
 
   @override
   void initState() {
-    context
-        .read<UserHomeProvider>()
-        .setSelectedTown(context.read<UserProvider>().user?.town.first);
+    final towns = context.read<UserProvider>().user?.town;
+    if (towns != null && towns.isNotEmpty) {
+      context.read<UserHomeProvider>().setSelectedTown(towns.first);
+    }
     notification.notificationListener();
     super.initState();
   }
