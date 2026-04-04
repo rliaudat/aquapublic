@@ -86,6 +86,13 @@ class _CreateOwnerScreenState extends State<CreateOwnerScreen> {
       showToast(context, msg: 'CreateOwnerScreen.passwordsDoNotMatch'.tr());
       return;
     }
+    if (widget.role == 'Inspector') {
+      final selectedTowns = context.read<CreateOwnerProvider>().selectedTown;
+      if (selectedTowns == null || (selectedTowns is List && selectedTowns.isEmpty)) {
+        showToast(context, msg: 'CreateOwnerScreen.townRequired'.tr());
+        return;
+      }
+    }
     doCreate();
   }
 
