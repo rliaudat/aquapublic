@@ -28,13 +28,13 @@ class AuthService {
           // print("AuthService.phoneNumberAutomaticallyVerified".tr());
         },
         verificationFailed: (FirebaseAuthException e) {
-          print("AuthService.verificationFailed".tr() + '${e.message}');
+          // print("AuthService.verificationFailed".tr() + '${e.message}');
           onVerificationFailed(
               e.message ?? "AuthService.verificationFailed".tr());
         },
         codeSent: (String verificationId, int? resendToken) {
-          print("AuthService.otpSentTo".tr() +
-              '$phone, Verification ID: $verificationId');
+          // print("AuthService.otpSentTo".tr() +
+          //     '$phone, Verification ID: $verificationId');
           onCodeSent(verificationId);
           showToast(context, msg: '${'AuthService.otpSentTo'.tr()}$phone');
         },
@@ -78,10 +78,6 @@ class AuthService {
       var fetchEmail = await UserServices.fetchByEmail(user.email);
       if (fetchEmail != null) {
         return 'AuthService.thisEmailAddressIsAlreadyRegistered'.tr();
-      }
-      var fetchPhoneNumber = await UserServices.fetchByPhone(user.phoneNumber);
-      if (fetchPhoneNumber != null) {
-        return 'AuthService.thisPhoneNumberIsAlreadyRegistered'.tr();
       }
 
       final encryptionResult = encryptPass(text: password, key: 'SECRET_KEY');
@@ -131,6 +127,29 @@ class AuthService {
       return 'AuthService.success'.tr();
     } on FirebaseAuthException catch (e) {
       return e.message;
+    }
+  }
+
+  Future<String> deleteAccount() async {
+    try {
+      User? currentUser = auth.currentUser;
+      if (currentUser != null) {
+        // Delete user from Firestore first
+        String result = await UserServices.deleteUser(currentUser.uid);
+        if (result != 'AuthService.success'.tr()) {
+          return result;
+        }
+
+        // Then delete the user from Firebase Auth
+        await currentUser.delete();
+        return 'AuthService.success'.tr();
+      } else {
+        return 'AuthService.error'.tr();
+      }
+    } on FirebaseAuthException catch (e) {
+      return e.message ?? 'AuthService.error'.tr();
+    } catch (e) {
+      return 'AuthService.error'.tr();
     }
   }
 }

@@ -57,9 +57,12 @@ class _SplashScreenState extends State<SplashScreen> {
             Navigator.pushAndRemoveUntil(
                 context,
                 MaterialPageRoute(
-                    builder: (context) => isDesktop
-                        ? const UserWebDashboardPage()
-                        : const ManagerHomeScreen()),
+                    builder: (context) 
+                    => 
+                    // isDesktop
+                    //     ? const UserWebDashboardPage()
+                    //     : 
+                        const ManagerHomeScreen()),
                 (route) => false);
           } else if (state.user.role == 'Inspector') {
             Navigator.pushAndRemoveUntil(
@@ -71,9 +74,11 @@ class _SplashScreenState extends State<SplashScreen> {
             Navigator.pushAndRemoveUntil(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => isDesktop
-                      ? const UserWebDashboardPage()
-                      : const HomeScreen(),
+                  builder: (context) =>
+                  //  isDesktop
+                  //     ? const UserWebDashboardPage()
+                  //     : 
+                      const HomeScreen(),
                 ),
                 (route) => false);
           } else if (state.user.role == 'Admin') {

@@ -9,7 +9,9 @@ class MeterReadingProvider extends ChangeNotifier {
 
   void setIsOCREnabled(bool value) {
     _isOCREnabled = value;
-    notifyListeners();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
   }
 
   void setHasReading(bool value) {

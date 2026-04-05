@@ -14,22 +14,30 @@ class SearchHouseBillProvider extends ChangeNotifier {
 
   void setSearchValue(String value) {
     _searchValue = value;
-    notifyListeners();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
   }
 
   void setCurrentPage(int value) {
     _currentPage = value;
-    notifyListeners();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
   }
 
   void setRowsPerPage(int value) {
     _rowsPerPage = value;
-    notifyListeners();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
   }
 
   void setTotalRowAndPage(int value) {
     _totalRows = value;
     _totalPages = ((_totalRows ?? 0) / _rowsPerPage).ceil();
-    notifyListeners();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
   }
 }

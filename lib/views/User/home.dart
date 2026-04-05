@@ -1,3 +1,5 @@
+// ignore_for_file: curly_braces_in_flow_control_structures
+
 import 'package:agua_med/Components/Drawer.dart';
 import 'package:agua_med/_helpers/helper.dart';
 import 'package:agua_med/_helpers/notification.dart';
@@ -47,7 +49,9 @@ class _HomeScreenState extends State<HomeScreen> {
       DateTime now = DateTime.now();
       bool isInCurrentMonth = lastReadingDate.year == now.year &&
           lastReadingDate.month == now.month;
-      return isInCurrentMonth;
+      return isInCurrentMonth
+          ? lastReading['measurementStatus'] == 'completed'
+          : false;
     }
 
     return false;
@@ -255,19 +259,20 @@ class _HomeScreenState extends State<HomeScreen> {
                   buildInfoRow(
                     icon: Icons.speed,
                     label: 'HomeScreen.reading',
-                    value: data.lastReading!['reading'].toString(),
+                    value: data.lastReading!['reading'].toStringAsFixed(2),
                   ),
                   const SizedBox(height: 10),
                   buildInfoRow(
                     icon: Icons.bolt,
                     label: 'HomeScreen.calcConsumption',
-                    value: data.lastReading!['units'].toString(),
+                    value: data.lastReading!['units'].toStringAsFixed(2),
                   ),
                   const SizedBox(height: 10),
                   buildInfoRow(
                     icon: Icons.history_toggle_off,
                     label: 'HomeScreen.lastConsumption',
-                    value: data.lastReading!['previousUnits'].toString(),
+                    value:
+                        data.lastReading!['previousUnits'].toStringAsFixed(2),
                   ),
                   const SizedBox(height: 10),
                   buildInfoRow(
@@ -281,6 +286,20 @@ class _HomeScreenState extends State<HomeScreen> {
                     label: 'HomeScreen.amount',
                     value: '\$${data.lastReading!['amount']}',
                   ),
+                  const SizedBox(height: 10),
+                  buildInfoRow(
+                    icon: Icons.water_drop,
+                    label: 'SearchHouseScreen.consumption',
+                    value: data.cohabitants == null || data.houseType == null
+                        ? ''
+                        : consumptionLevel(
+                            data.houseType!,
+                            data.cohabitants!,
+                            double.parse(
+                              data.lastReading!['units'].toStringAsFixed(2),
+                            ),
+                          ),
+                  ),
                 ],
               ],
             ),
@@ -289,6 +308,93 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
     );
+  }
+
+  String consumptionLevel(
+      String houseType, int cohabitants, double consumption) {
+    if (houseType == "Living") {
+      switch (cohabitants) {
+        case 2:
+          if (consumption < 22) {
+            return "Low";
+          } else if (consumption <= 39)
+            return "Medium";
+          else
+            return "High";
+        case 3:
+          if (consumption < 27) {
+            return "Low";
+          } else if (consumption <= 45)
+            return "Medium";
+          else
+            return "High";
+        case 4:
+          if (consumption < 33) {
+            return "Low";
+          } else if (consumption <= 63)
+            return "Medium";
+          else
+            return "High";
+        case 5:
+          if (consumption < 39) {
+            return "Low";
+          } else if (consumption <= 84)
+            return "Medium";
+          else
+            return "High";
+        case 6:
+          if (consumption < 45) {
+            return "Low";
+          } else if (consumption <= 108)
+            return "Medium";
+          else
+            return "High";
+        default:
+          return "Unknown"; // or handle invalid cohabitants number
+      }
+    } else if (houseType == "Weekend") {
+      switch (cohabitants) {
+        case 2:
+          if (consumption < 5.84) {
+            return "Low";
+          } else if (consumption <= 10.4)
+            return "Medium";
+          else
+            return "High";
+        case 3:
+          if (consumption < 7.2) {
+            return "Low";
+          } else if (consumption <= 12)
+            return "Medium";
+          else
+            return "High";
+        case 4:
+          if (consumption < 8.8) {
+            return "Low";
+          } else if (consumption <= 16.8)
+            return "Medium";
+          else
+            return "High";
+        case 5:
+          if (consumption < 10.4) {
+            return "Low";
+          } else if (consumption <= 22.4)
+            return "Medium";
+          else
+            return "High";
+        case 6:
+          if (consumption < 12) {
+            return "Low";
+          } else if (consumption <= 28.8)
+            return "Medium";
+          else
+            return "High";
+        default:
+          return "Unknown"; // or handle invalid cohabitants number
+      }
+    } else {
+      return "Unknown"; // or handle invalid house type
+    }
   }
 
   Widget _buildCardHeader(House data, bool hasReadings) {
@@ -327,7 +433,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildConsumptionRow(House data) {
     var consumption = (double.parse(data.lastReading!['reading'].toString()) -
             double.parse(data.lastReading!['previousReading'].toString()))
-        .toString();
+        .toStringAsFixed(2);
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [

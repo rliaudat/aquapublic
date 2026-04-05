@@ -122,188 +122,169 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     return GestureDetector(
       onTap: () => unFocus(context),
       child: Scaffold(
+        drawer: const CustomDrawer(),
         appBar: isTablet
-            ? null
+            ? CustomAppBar(
+                title: 'EditProfileScreen.editProfile'.tr(),
+                showAction: false,
+                showButton: true,
+              )
             : CustomAppBar(title: 'EditProfileScreen.editProfile'.tr()),
         body:
             Consumer<EditProfileProvider>(builder: (context, provider, child) {
-          return Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              isTablet ? const CustomDrawer() : Container(),
-              Expanded(
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      isTablet
-                          ? CustomAppBar(
-                              title: 'EditProfileScreen.editProfile'.tr(),
-                              showAction: false,
-                              showButton: false)
-                          : Container(),
-                      const SizedBox(height: 20),
-                      Padding(
-                        padding: EdgeInsets.symmetric(horizontal: p),
-                        child: Center(
-                          child: Container(
-                            width: isTablet ? 400 : width(context),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(
-                                color:
-                                    isTablet ? darkGreyColor : transparentColor,
-                                width: isTablet ? 0 : 0.5,
-                              ),
-                            ),
-                            padding: EdgeInsets.symmetric(
-                                horizontal: isTablet ? p : 0.0,
-                                vertical: isTablet ? 16.0 : 0.0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+          return SingleChildScrollView(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 20),
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: p),
+                  child: Center(
+                    child: Container(
+                      width: isTablet ? 400 : width(context),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: isTablet ? darkGreyColor : transparentColor,
+                          width: isTablet ? 0 : 0.5,
+                        ),
+                      ),
+                      padding: EdgeInsets.symmetric(
+                          horizontal: isTablet ? p : 0.0,
+                          vertical: isTablet ? 16.0 : 0.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Center(
+                            child: Stack(
                               children: [
                                 Center(
-                                  child: Stack(
-                                    children: [
-                                      Center(
-                                        child: SizedBox(
-                                          height: 100,
-                                          width: 100,
-                                          child: ClipRRect(
-                                            borderRadius:
-                                                BorderRadius.circular(100),
-                                            child: kIsWeb
-                                                ? provider.webImage != null
-                                                    ? Image.memory(
-                                                        provider.webImage!,
-                                                        fit: BoxFit.cover)
-                                                    : CachedNetworkImage(
-                                                        imageUrl: provider
-                                                            .profileImageUrl,
-                                                        fit: BoxFit.cover,
-                                                        errorWidget: (context,
-                                                                url, error) =>
-                                                            Image.asset(
-                                                                'assets/avatar.png'),
-                                                      )
-                                                : (provider.selectedImage !=
-                                                        null
-                                                    ? Image.file(
-                                                        provider.selectedImage!,
-                                                        fit: BoxFit.cover)
-                                                    : CachedNetworkImage(
-                                                        imageUrl: provider
-                                                            .profileImageUrl,
-                                                        fit: BoxFit.cover,
-                                                        errorWidget: (context,
-                                                                url, error) =>
-                                                            Image.asset(
-                                                                'assets/avatar.png'))),
-                                          ),
+                                  child: SizedBox(
+                                    height: 100,
+                                    width: 100,
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(100),
+                                      child: kIsWeb
+                                          ? provider.webImage != null
+                                              ? Image.memory(provider.webImage!,
+                                                  fit: BoxFit.cover)
+                                              : CachedNetworkImage(
+                                                  imageUrl:
+                                                      provider.profileImageUrl,
+                                                  fit: BoxFit.cover,
+                                                  errorWidget: (context, url,
+                                                          error) =>
+                                                      Image.asset(
+                                                          'assets/avatar.png'),
+                                                )
+                                          : (provider.selectedImage != null
+                                              ? Image.file(
+                                                  provider.selectedImage!,
+                                                  fit: BoxFit.cover)
+                                              : CachedNetworkImage(
+                                                  imageUrl:
+                                                      provider.profileImageUrl,
+                                                  fit: BoxFit.cover,
+                                                  errorWidget: (context, url,
+                                                          error) =>
+                                                      Image.asset(
+                                                          'assets/avatar.png'))),
+                                    ),
+                                  ),
+                                ),
+                                Positioned.fill(
+                                  top: 70,
+                                  left: 65,
+                                  child: GestureDetector(
+                                    onTap: () => pickImage(),
+                                    child: Container(
+                                      height: 20,
+                                      width: 20,
+                                      decoration: BoxDecoration(
+                                        color: primaryColor,
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                          color: whiteColor,
+                                          width: 3,
                                         ),
                                       ),
-                                      Positioned.fill(
-                                        top: 70,
-                                        left: 65,
-                                        child: GestureDetector(
-                                          onTap: () => pickImage(),
-                                          child: Container(
-                                            height: 20,
-                                            width: 20,
-                                            decoration: BoxDecoration(
-                                              color: primaryColor,
-                                              shape: BoxShape.circle,
-                                              border: Border.all(
-                                                color: whiteColor,
-                                                width: 3,
-                                              ),
-                                            ),
-                                            child: Icon(
-                                              Icons.camera_alt_outlined,
-                                              size: 18,
-                                              color: whiteColor,
-                                            ),
-                                          ),
-                                        ),
+                                      child: Icon(
+                                        Icons.camera_alt_outlined,
+                                        size: 18,
+                                        color: whiteColor,
                                       ),
-                                    ],
+                                    ),
                                   ),
-                                ),
-                                SizedBox(height: isTablet ? 30 : 50),
-                                Text(
-                                  'EditProfileScreen.FirstName'.tr(),
-                                  style: const TextStyle(
-                                      fontWeight: FontWeight.bold),
-                                ),
-                                const SizedBox(height: 8),
-                                TextField(
-                                  controller: firstName,
-                                  decoration: InputDecoration(
-                                    hintText:
-                                        'EditProfileScreen.Enteryourfirstname'
-                                            .tr(),
-                                  ),
-                                ),
-                                SizedBox(height: p),
-                                Text(
-                                  'EditProfileScreen.LastName'.tr(),
-                                  style: const TextStyle(
-                                      fontWeight: FontWeight.bold),
-                                ),
-                                const SizedBox(height: 8),
-                                TextField(
-                                  controller: lastName,
-                                  decoration: InputDecoration(
-                                      hintText:
-                                          'EditProfileScreen.Enteryourlastname'
-                                              .tr()),
-                                ),
-                                SizedBox(height: p),
-                                Text(
-                                  'EditProfileScreen.Email'.tr(),
-                                  style: const TextStyle(
-                                      fontWeight: FontWeight.bold),
-                                ),
-                                const SizedBox(height: 8),
-                                TextField(
-                                  controller: email,
-                                  enabled: false,
-                                  decoration: InputDecoration(
-                                    hintText:
-                                        'EditProfileScreen.Enteryouremailaddress'
-                                            .tr(),
-                                    prefixIcon:
-                                        Icon(Icons.email, color: borderColor),
-                                  ),
-                                ),
-                                SizedBox(height: isTablet ? p : 170),
-                                Button(
-                                  height: 50,
-                                  width: width(context),
-                                  text: 'EditProfileScreen.Save'.tr(),
-                                  onPressed: () async {
-                                    showLoader(context,
-                                        'EditProfileScreen.Justamoment'.tr());
-
-                                    if (provider.selectedImage != null ||
-                                        provider.webImage != null) {
-                                      await uploadImage();
-                                    }
-                                    await saveAdminData();
-                                    pop(context);
-                                  },
                                 ),
                               ],
                             ),
                           ),
-                        ),
+                          SizedBox(height: isTablet ? 30 : 50),
+                          Text(
+                            'EditProfileScreen.FirstName'.tr(),
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 8),
+                          TextField(
+                            controller: firstName,
+                            decoration: InputDecoration(
+                              hintText:
+                                  'EditProfileScreen.Enteryourfirstname'.tr(),
+                            ),
+                          ),
+                          SizedBox(height: p),
+                          Text(
+                            'EditProfileScreen.LastName'.tr(),
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 8),
+                          TextField(
+                            controller: lastName,
+                            decoration: InputDecoration(
+                                hintText:
+                                    'EditProfileScreen.Enteryourlastname'.tr()),
+                          ),
+                          SizedBox(height: p),
+                          Text(
+                            'EditProfileScreen.Email'.tr(),
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 8),
+                          TextField(
+                            controller: email,
+                            enabled: false,
+                            decoration: InputDecoration(
+                              hintText:
+                                  'EditProfileScreen.Enteryouremailaddress'
+                                      .tr(),
+                              prefixIcon: Icon(Icons.email, color: borderColor),
+                            ),
+                          ),
+                          SizedBox(height: isTablet ? p : 170),
+                          Button(
+                            height: 50,
+                            width: width(context),
+                            text: 'EditProfileScreen.Save'.tr(),
+                            onPressed: () async {
+                              showLoader(context,
+                                  'EditProfileScreen.Justamoment'.tr());
+
+                              if (provider.selectedImage != null ||
+                                  provider.webImage != null) {
+                                await uploadImage();
+                              }
+                              await saveAdminData();
+                              pop(context);
+                            },
+                          ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           );
         }),
       ),

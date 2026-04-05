@@ -33,7 +33,12 @@
         "downloadTheApp": "Descarga la app",
         "supportEmail": "soporte@aguamed.com.ar",
         "supportPhone": "+549112345678",
-        "copyright": "© Derechos reservados 2025."
+        "copyright": "© Derechos reservados 2025.",
+        "home": "Inicio",
+        "about": "Acerca de",
+        "services": "Servicios",
+        "contact": "Contacto",
+        "signIn": "Iniciar sesión"
     },
     "LoginScreen": {
         "pleaseEnterEmail": "Por favor, ingresa tu correo electrónico",
@@ -297,8 +302,6 @@
         "inspectors": "Inspectores",
         "userRegistrations": "Registros de usuarios",
         "houses": "Lotes",
-        "invoices": "Lecturas",
-        "editProfile": "Editar perfil",
         "logout": "Cerrar sesión"
     },
     "InspectorHomeScreen": {
@@ -332,6 +335,9 @@
         "capture": "Capturar",
         "process": "Procesar",
         "retake": "Volver a tomar",
+        "waiting": "Esperando...",
+        "resetting": "Reiniciando...",
+        "initializing": "Inicializando...",
         "failedToExtractText": "No se pudo extraer el texto: ",
         "unableToDecodeImage": "No se pudo decodificar la imagen",
         "failedToUploadImage": "Error al subir la imagen: "
@@ -375,7 +381,12 @@
         "rateUs": "Califícanos",
         "privacyAndPolicy": "Privacidad y Política",
         "termsAndConditions": "Términos y Condiciones",
-        "logout": "Cerrar sesión"
+        "deleteAccount": "Eliminar cuenta",
+        "deleteAccountConfirmation": "¿Estás seguro de que quieres eliminar tu cuenta? Esta acción no se puede deshacer y eliminará permanentemente todos tus datos.",
+        "accountDeleted": "Cuenta eliminada exitosamente",
+        "failedToDeleteAccount": "Error al eliminar la cuenta",
+        "logout": "Cerrar sesión",
+        "readings": "Lecturas"
     },
     "AddUpdateHouses": {
         "pleaseEnterHouseName": "Por favor, ingresa el nombre del lote",
@@ -389,7 +400,19 @@
         "house": "Lote",
         "enterHouseName": "Ingresa el numero del lote",
         "add": "Agregar",
-        "update": "Actualizar"
+        "update": "Actualizar",
+        "pleaseEnterHouseState": "Por favor ingrese el estado del lote",
+    "pleaseEnterCohabitants": "Por favor ingrese el número de cohabitantes",
+    "pleaseEnterMeterNumber": "Por favor ingrese el número de medidor",
+    "pleaseSelectHouseType": "Por favor seleccione el tipo de lote",
+    "houseState": "Estado del lote",
+    "enterHouseState": "Ingrese estado del lote",
+    "cohabitants": "Cohabitantes",
+    "enterCohabitants": "Ingrese número de cohabitantes",
+    "meterNumber": "Número de medidor",
+    "enterMeterNumber": "Ingrese número de medidor",
+    "houseType": "Tipo de lote",
+    "selectHouseType": "Seleccione tipo de lote"
     },
     "AddUpdateTown": {
         "pleaseEnterTownName": "Por favor, ingresa el nombre del barrio",
@@ -399,7 +422,24 @@
         "addTown": "Agregar barrio",
         "addTownName": "Agregar nombre del barrio",
         "unitPriceM3": "Precio por unidad m³",
-        "updateTown": "Actualizar barrio"
+        "updateTown": "Actualizar barrio",
+        "totalAmountToDivideByConsumptions": "Monto total a dividir según consumos",
+    "totalAmountToDivideByHouse": "Monto total a dividir por cantidad de lotes",
+    "fixedAmountToBeCharged": "Monto fijo a cobrar por cada lote"
+    },
+    "CalculateBill": {
+        "calculateBills": "Calcular facturas",
+        "addTownName": "Agregar nombre de barrio",
+        "unitPriceM3": "Precio por unidad m³",
+        "totalAmountToDivideByConsumptions": "Monto total a dividir según consumos",
+        "totalAmountToDivideByHouse": "Monto total a dividir por cantidad de lotes",
+        "fixedAmountToBeCharged": "Monto fijo a cobrar por cada lote",
+        "calculate": "Calcular",
+        "refreshStatus": "Actualizar",
+        "pendingMeasurements": "Lecturas de lotes pendientes",
+        "cannotCalculate": "No se puede calcular la facturación",
+        "measurementsPending": "Lecturas pendientes"
+        
     },
     "FilterBottomSheet": {
         "sortAndFilter": "Ordenar y Filtrar",

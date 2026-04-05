@@ -9,8 +9,8 @@ class HouseServices {
     'house',
   );
 
-  static void create(BuildContext context, House house) {
-    _houseCollection
+  static Future<void> create(BuildContext context, House house) async {
+    await _houseCollection
         .add(
       house.toMap(),
     )
@@ -36,6 +36,10 @@ class HouseServices {
 
   static void update(String id, Map<String, dynamic> data) {
     _houseCollection.doc(id).update(data);
+  }
+
+  static Future<House> fetchByID(String id) async {
+    return House.fromDoc(await _houseCollection.doc(id).get());
   }
 
   static Future<List<House>> fetchAllByTown(String townID) async {

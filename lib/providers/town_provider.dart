@@ -11,21 +11,29 @@ class TownProvider extends ChangeNotifier {
 
   void setQuery(String? query) {
     _query = query;
-    notifyListeners();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
   }
 
   void setAddButtonHover(bool value) {
     _addButtonHover = value;
-    notifyListeners();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
   }
 
   void setSearchButtonHover(bool value) {
     _searchButtonHover = value;
-    notifyListeners();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
   }
 
   void clearQuery() {
     _query = null;
-    notifyListeners();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
   }
 }

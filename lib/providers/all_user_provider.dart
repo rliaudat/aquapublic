@@ -9,11 +9,15 @@ class AllUserProvider extends ChangeNotifier {
 
   void setSearchQuery(String value) {
     _searchQuery = value;
-    notifyListeners();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
   }
 
   void setAddHover(bool value) {
     _addHover = value;
-    notifyListeners();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
   }
 }

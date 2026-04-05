@@ -13,7 +13,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:printing/printing.dart';
 import 'package:provider/provider.dart';
-import 'package:responsive_framework/responsive_framework.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:pdf/pdf.dart';
 import 'package:easy_localization/easy_localization.dart';
@@ -254,30 +253,25 @@ class _SearchHouseScreenState extends State<SearchHouseScreen> {
 
   @override
   Widget build(BuildContext context) {
-    bool isTablet = ResponsiveBreakpoints.of(context).largerThan(TABLET);
-
     return GestureDetector(
       onTap: () => unFocus(context),
       child: Consumer<SearchHouseBillProvider>(
         builder: (context, provider, child) {
           return Scaffold(
-            appBar: isTablet
-                ? null
-                : AppBar(
-                    title: Text(townName()),
-                    backgroundColor: primaryColor,
-                  ),
-            drawer: isTablet ? null : const CustomDrawer(),
+            appBar: AppBar(
+              title: Text(townName()),
+              backgroundColor: primaryColor,
+            ),
+            drawer: const CustomDrawer(),
             body: StreamBuilder(
                 stream: _houseDataStream,
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const Center(child: CircularProgressIndicator());
                   } else if (snapshot.data?.isEmpty ?? false) {
-                    return Row(
+                    return const Row(
                       children: [
-                        if (isTablet) const CustomDrawer(),
-                        const Expanded(
+                        Expanded(
                           child: Center(
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
@@ -316,7 +310,6 @@ class _SearchHouseScreenState extends State<SearchHouseScreen> {
                     return Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        if (isTablet) const CustomDrawer(),
                         Expanded(
                           child: Container(
                             color: backgroundColor,
