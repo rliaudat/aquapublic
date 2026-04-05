@@ -89,7 +89,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
               text: 'CustomDrawer.dashboard'.tr(),
               onTap: () {
                 if (mounted) setState(() => selectedTile = 0);
-                pop(context);
+                if (!isTablet) pop(context);
 
                 if (user.role == 'Admin') {
                   Navigator.pushReplacement(
@@ -144,7 +144,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
                 text: 'CustomDrawer.houseOwners'.tr(),
                 onTap: () {
                   if (mounted) setState(() => selectedTile = 1);
-                  pop(context);
+                  if (!isTablet) pop(context);
                   Navigator.pushReplacement(
                       context,
                       MaterialPageRoute(
@@ -165,7 +165,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
                 text: 'CustomDrawer.inspectors'.tr(),
                 onTap: () {
                   if (mounted) setState(() => selectedTile = 2);
-                  pop(context);
+                  if (!isTablet) pop(context);
                   Navigator.pushReplacement(
                       context,
                       MaterialPageRoute(
@@ -186,7 +186,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
                 text: 'CustomDrawer.userRegistrations'.tr(),
                 onTap: () {
                   if (mounted) setState(() => selectedTile = 3);
-                  pop(context);
+                  if (!isTablet) pop(context);
                   Navigator.pushReplacement(
                       context,
                       MaterialPageRoute(
@@ -206,7 +206,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
                 text: 'CustomDrawer.towns'.tr(),
                 onTap: () {
                   if (mounted) setState(() => selectedTile = 4);
-                  pop(context);
+                  if (!isTablet) pop(context);
                   Navigator.pushReplacement(
                           context,
                           MaterialPageRoute(
@@ -226,7 +226,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
                 text: 'CustomDrawer.townManagers'.tr(),
                 onTap: () {
                   if (mounted) setState(() => selectedTile = 5);
-                  pop(context);
+                  if (!isTablet) pop(context);
                   Navigator.pushReplacement(
                       context,
                       MaterialPageRoute(
@@ -270,7 +270,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
                 text: 'CustomDrawer.invoices'.tr(),
                 onTap: () {
                   if (mounted) setState(() => selectedTile = 6);
-                  pop(context);
+                  if (!isTablet) pop(context);
                   if (user.role == 'Admin' || user.role == 'Manager') {
                     Navigator.pushReplacement(
                             context,
@@ -299,7 +299,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
               text: 'CustomDrawer.editProfile'.tr(),
               onTap: () {
                 if (mounted) setState(() => selectedTile = 7);
-                pop(context);
+                if (!isTablet) pop(context);
                 Navigator.pushReplacement(
                   context,
                   MaterialPageRoute(
