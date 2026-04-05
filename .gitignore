@@ -1,0 +1,20 @@
+# macOS
+.DS_Store
+
+# Dart / Flutter
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub/
+.pub-cache/
+build/
+
+# Generated platform artifacts
+**/ephemeral/
+**/.plugin_symlinks/
+__MACOSX/
+
+# IDE
+.idea/
+*.iml
