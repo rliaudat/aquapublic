@@ -30,9 +30,7 @@ class OwnerDetailProvider extends ChangeNotifier {
     _towns = listedTowns.map((data) {
       return {'id': data.id, 'name': data.name};
     }).toList();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      notifyListeners();
-    });
+    notifyListeners();
   }
 
   void fetchHouses(String townID) async {
@@ -61,29 +59,21 @@ class OwnerDetailProvider extends ChangeNotifier {
 
   void setIsPasswordVisible(bool value) {
     _isPasswordVisible = value;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      notifyListeners();
-    });
+    notifyListeners();
   }
 
   void setIsConfirmPasswordVisible(bool value) {
     _isConfirmPasswordVisible = value;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      notifyListeners();
-    });
+    notifyListeners();
   }
 
   void setProfileImage(File? value) {
     _profileImage = value;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      notifyListeners();
-    });
+    notifyListeners();
   }
 
   void setUpdateHover(bool value) {
     _updateHover = value;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      notifyListeners();
-    });
+    notifyListeners();
   }
 }

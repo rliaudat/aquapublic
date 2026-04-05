@@ -7,6 +7,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dropdown_search/dropdown_search.dart';
 import 'package:email_validator/email_validator.dart';
 import 'package:ephone_field/ephone_field.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl_phone_number_input/intl_phone_number_input.dart';
@@ -104,7 +105,7 @@ class _OwnerDetailsScreenState extends State<OwnerDetailsScreen> {
         );
         pop(context);
       } else {
-        // ignore: use_build_context_synchronously, no_wildcard_variable_uses
+        // ignore: use_build_context_synchronously
         showToast(context, msg: _);
       }
     });
@@ -135,17 +136,20 @@ class _OwnerDetailsScreenState extends State<OwnerDetailsScreen> {
       return GestureDetector(
         onTap: () => unFocus(context),
         child: Scaffold(
-          appBar: isTablet
-              ? CustomAppBar(title: '${widget.header} Details')
-              : CustomAppBar(title: '${widget.header} Details'),
+          appBar:
+              isTablet ? null : CustomAppBar(title: '${widget.header} Details'),
           body: Row(
             children: [
+              isTablet ? const CustomDrawer() : Container(),
               Flexible(
                 child: SingleChildScrollView(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.start,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      isTablet
+                          ? CustomAppBar(title: '${widget.header} Details')
+                          : Container(),
                       const SizedBox(height: 20),
                       Padding(
                         padding: EdgeInsets.symmetric(horizontal: p),
@@ -444,7 +448,7 @@ class _OwnerDetailsScreenState extends State<OwnerDetailsScreen> {
                                           itemAsString: (item) =>
                                               item['name'].toString(),
                                           onChanged: (value) {
-                                            provider.setHouse(value);
+                                            provider.selectedHouse(value);
                                           },
                                           compareFn: (item, _) =>
                                               // ignore: no_wildcard_variable_uses

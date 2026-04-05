@@ -46,7 +46,7 @@ class _ShowReadingBottomSheetState extends State<ShowReadingBottomSheet> {
   var reading = TextEditingController();
   var description = TextEditingController();
 
-  String? comment;
+  final List<String> comments = [];
   late House data;
 
   // Functions
@@ -92,10 +92,92 @@ class _ShowReadingBottomSheetState extends State<ShowReadingBottomSheet> {
     );
   }
 
-  String _generateSafeId(String houseNumber, int month, int year) {
-    // Handle null/empty/N/A cases
-    if (houseNumber.isEmpty || houseNumber == 'N/A') {
-      return 'default_${month.toString().padLeft(2, '0')}_$year';
+  Future<void> doSubmitReading(
+      {required File? image,
+      required Uint8List? webImage,
+      required String inspectorUID}) async {
+    try {
+      Town? townData = await TownServices.fetchByID(data.townID);
+      if (townData != null) {
+        var perUnitPrice = double.parse(townData.unitPrice.toString());
+        var currentReadingValue = double.tryParse(reading.text) ?? 0.00;
+
+        double previousReadingValue = 0.00;
+        DateTime previousReadingDate = DateTime.now();
+
+        double units = 0.00;
+        double previousUnit = 0.00;
+        if (data.lastReading != null) {
+          var lastReading = data.lastReading;
+          previousReadingValue =
+              double.tryParse(lastReading!['reading'].toString()) ?? 0.00;
+          previousReadingDate = (lastReading['date'] as Timestamp).toDate();
+
+          units = currentReadingValue - previousReadingValue;
+          previousUnit =
+              double.tryParse(lastReading['units'].toString()) ?? 0.00;
+        } else {
+          units = currentReadingValue;
+        }
+
+        var consumptionDays =
+            DateTime.now().difference(previousReadingDate).inDays;
+        var amount = units * perUnitPrice;
+
+        String filePath = 'readings/${DateTime.now()}/$inspectorUID.jpg';
+        TaskSnapshot uploadTask;
+
+        if (kIsWeb) {
+          var uploadedWebImage = await compressWebImage(webImage!);
+          uploadTask = await _storage.ref(filePath).putData(uploadedWebImage!);
+        } else {
+          var uploadedMobileImage = await compressImage(image!);
+          uploadTask =
+              await _storage.ref(filePath).putFile(uploadedMobileImage);
+        }
+
+        String imgURL = await uploadTask.ref.getDownloadURL();
+
+        ReadingServices.create(
+          Reading(
+            id: '',
+            amount: amount,
+            consumptionDays: consumptionDays,
+            date: Timestamp.now(),
+            houseId: data.id,
+            inspectorId: inspectorUID,
+            meterImageURL: imgURL,
+            previousReading: previousReadingValue,
+            previousUnits: previousUnit,
+            reading: currentReadingValue,
+            townId: data.townID,
+            units: units,
+            comment: comments,
+            isDelete: false,
+            createdAt: Timestamp.now(),
+            updatedAt: Timestamp.now(),
+          ),
+        );
+        HouseServices.update(
+          data.id,
+          {
+            'lastReading': {
+              'amount': amount,
+              'consumptionDays': consumptionDays,
+              'date': Timestamp.now(),
+              'inspectorId': inspectorUID,
+              'meterImageURL': imgURL,
+              'previousReading': previousReadingValue,
+              'previousUnits': previousUnit,
+              'reading': currentReadingValue,
+              'units': units,
+            },
+          },
+        );
+        sendPushNotification();
+      }
+    } catch (e) {
+      debugPrint("Error submitting reading: $e");
     }
 
     // Basic sanitization
@@ -234,6 +316,23 @@ class _ShowReadingBottomSheetState extends State<ShowReadingBottomSheet> {
     showToast(context, msg: "Reading submitted! Syncing in background...");
   }
 
+  void submitReadingWithNavigation(
+    BuildContext context, {
+    required File? image,
+    required Uint8List? webImage,
+    required String inspectorUID,
+  }) {
+    Future.microtask(() async {
+      await doSubmitReading(
+        image: image,
+        webImage: webImage,
+        inspectorUID: inspectorUID,
+      );
+    });
+    Navigator.popUntil(context, (route) => route.isFirst);
+    showToast(context, msg: "Reading submitted! Syncing in background...");
+  }
+
   sendPushNotification() async {
     List<String> fcmTokens = [];
     try {
@@ -325,6 +424,7 @@ class _ShowReadingBottomSheetState extends State<ShowReadingBottomSheet> {
   Future<Locale?> discalimerBox(
     BuildContext context,
   ) async {
+    bool isEnglishSelected = true;
     return await showDialog<Locale>(
       context: context,
       builder: (context) {
@@ -370,26 +470,16 @@ class _ShowReadingBottomSheetState extends State<ShowReadingBottomSheet> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Container(
+                            height: 30,
                             width: 100,
                             decoration: BoxDecoration(
                                 color: whiteColor,
                                 borderRadius: BorderRadius.circular(13)),
                             child: TextButton(
                                 onPressed: () {
-                                  comment = description.text;
+                                  comments.add(description.text);
                                   description.clear();
                                   Navigator.pop(context);
-                                  submitReadingWithNavigation(
-                                    context,
-                                    image: context
-                                        .read<ReadingBottomSheetProvider>()
-                                        .image,
-                                    webImage: context
-                                        .read<ReadingBottomSheetProvider>()
-                                        .webImage,
-                                    inspectorUID:
-                                        context.read<UserProvider>().user!.uid,
-                                  );
                                 },
                                 child: Text(
                                   'userRegistrationScreen.confirm'.tr(),
@@ -397,6 +487,7 @@ class _ShowReadingBottomSheetState extends State<ShowReadingBottomSheet> {
                                 )),
                           ),
                           Container(
+                            height: 30,
                             width: 100,
                             decoration: BoxDecoration(
                                 color: whiteColor,

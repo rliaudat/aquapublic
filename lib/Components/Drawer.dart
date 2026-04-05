@@ -92,7 +92,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
                 if (!isTablet) pop(context);
 
                 if (user.role == 'Admin') {
-                  Navigator.pushReplacement(
+                  Navigator.push(
                           context,
                           MaterialPageRoute(
                               builder: (context) => const AdminHomeScreen()))
@@ -100,19 +100,16 @@ class _CustomDrawerState extends State<CustomDrawer> {
                     if (mounted) setState(() => selectedTile = 0);
                   });
                 } else if (user.role == 'Manager') {
-                  Navigator.pushReplacement(
+                  Navigator.push(
                       context,
                       MaterialPageRoute(
-             
-                          builder: (context) => 
-                          // isDesktop
-                          //     ? const UserWebDashboardPage()
-                          //     : 
-                              const ManagerHomeScreen())).then((value) {
+                          builder: (context) => isDesktop
+                              ? const UserWebDashboardPage()
+                              : const ManagerHomeScreen())).then((value) {
                     if (mounted) setState(() => selectedTile = 0);
                   });
                 } else if (user.role == 'Inspector') {
-                  Navigator.pushReplacement(
+                  Navigator.push(
                       context,
                       MaterialPageRoute(
                           builder: (context) =>
@@ -120,14 +117,12 @@ class _CustomDrawerState extends State<CustomDrawer> {
                     if (mounted) setState(() => selectedTile = 0);
                   });
                 } else {
-                  Navigator.pushReplacement(
+                  Navigator.push(
                       context,
                       MaterialPageRoute(
-                          builder: (context) =>
-                          //  isDesktop
-                          //     ? const UserWebDashboardPage()
-                          //     : 
-                              const HomeScreen())).then((value) {
+                          builder: (context) => isDesktop
+                              ? const UserWebDashboardPage()
+                              : const HomeScreen())).then((value) {
                     if (mounted) setState(() => selectedTile = 0);
                   });
                 }
@@ -144,8 +139,8 @@ class _CustomDrawerState extends State<CustomDrawer> {
                 text: 'CustomDrawer.houseOwners'.tr(),
                 onTap: () {
                   if (mounted) setState(() => selectedTile = 1);
-                  if (!isTablet) pop(context);
-                  Navigator.pushReplacement(
+                  pop(context);
+                  Navigator.push(
                       context,
                       MaterialPageRoute(
                           builder: (context) => const AllUsersScreen(
@@ -165,8 +160,8 @@ class _CustomDrawerState extends State<CustomDrawer> {
                 text: 'CustomDrawer.inspectors'.tr(),
                 onTap: () {
                   if (mounted) setState(() => selectedTile = 2);
-                  if (!isTablet) pop(context);
-                  Navigator.pushReplacement(
+                  pop(context);
+                  Navigator.push(
                       context,
                       MaterialPageRoute(
                           builder: (context) => const AllUsersScreen(
@@ -186,8 +181,8 @@ class _CustomDrawerState extends State<CustomDrawer> {
                 text: 'CustomDrawer.userRegistrations'.tr(),
                 onTap: () {
                   if (mounted) setState(() => selectedTile = 3);
-                  if (!isTablet) pop(context);
-                  Navigator.pushReplacement(
+                  pop(context);
+                  Navigator.push(
                       context,
                       MaterialPageRoute(
                           builder: (context) =>
@@ -206,8 +201,8 @@ class _CustomDrawerState extends State<CustomDrawer> {
                 text: 'CustomDrawer.towns'.tr(),
                 onTap: () {
                   if (mounted) setState(() => selectedTile = 4);
-                  if (!isTablet) pop(context);
-                  Navigator.pushReplacement(
+                  pop(context);
+                  Navigator.push(
                           context,
                           MaterialPageRoute(
                               builder: (context) => const TownsScreen()))
@@ -226,8 +221,8 @@ class _CustomDrawerState extends State<CustomDrawer> {
                 text: 'CustomDrawer.townManagers'.tr(),
                 onTap: () {
                   if (mounted) setState(() => selectedTile = 5);
-                  if (!isTablet) pop(context);
-                  Navigator.pushReplacement(
+                  pop(context);
+                  Navigator.push(
                       context,
                       MaterialPageRoute(
                           builder: (context) => const AllUsersScreen(
@@ -242,65 +237,41 @@ class _CustomDrawerState extends State<CustomDrawer> {
                 size: 22,
                 selected: selectedTile == 5,
               ),
-            // if (user.role == 'Admin')
-            //   DrawerTiles(
-            //     text: 'CustomDrawer.readings'.tr(),
-            //     onTap: () {
-            //       if (mounted) setState(() => selectedTile = 8);
-            //       pop(context);
-            //       Navigator.pushReplacement(
-            //         context,
-            //         MaterialPageRoute(
-            //           builder: (context) => const UserWebDashboardPage(),
-            //         ),
-            //       ).then(
-            //         (value) {
-            //           if (mounted) setState(() => selectedTile = 8);
-            //         },
-            //       );
-            //     },
-            //     imagePath: 'assets/images/reading.png',
-            //     rowWidth:
-            //         isTablet ? width(context) * 0.02 : width(context) * 0.05,
-            //     size: 20,
-            //     selected: selectedTile == 8,
-            //   ),
-            if (user.role == 'Admin' || user.role == 'Manager')
-              DrawerTiles(
-                text: 'CustomDrawer.invoices'.tr(),
-                onTap: () {
-                  if (mounted) setState(() => selectedTile = 6);
-                  if (!isTablet) pop(context);
-                  if (user.role == 'Admin' || user.role == 'Manager') {
-                    Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(
-                                builder: (context) => const InvoiceScreen()))
-                        .then((value) {
-                      if (mounted) setState(() => selectedTile = 6);
-                    });
-                  } else {
-                    Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                            builder: (context) =>
-                                const SearchHouseScreen())).then((value) {
-                      if (mounted) setState(() => selectedTile = 6);
-                    });
-                  }
-                },
-                imagePath: 'assets/images/invoice.png',
-                rowWidth:
-                    isTablet ? width(context) * 0.02 : width(context) * 0.05,
-                size: 20,
-                selected: selectedTile == 6,
-              ),
+            DrawerTiles(
+              text: 'CustomDrawer.invoices'.tr(),
+              onTap: () {
+                if (mounted) setState(() => selectedTile = 6);
+                pop(context);
+                if (user.role == 'Admin' || user.role == 'Manager') {
+                  Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => const InvoiceScreen()))
+                      .then((value) {
+                    if (mounted) setState(() => selectedTile = 6);
+                  });
+                } else {
+                  Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => const SearchHouseScreen()))
+                      .then((value) {
+                    if (mounted) setState(() => selectedTile = 6);
+                  });
+                }
+              },
+              imagePath: 'assets/images/invoice.png',
+              rowWidth:
+                  isTablet ? width(context) * 0.02 : width(context) * 0.05,
+              size: 20,
+              selected: selectedTile == 6,
+            ),
             DrawerTiles(
               text: 'CustomDrawer.editProfile'.tr(),
               onTap: () {
                 if (mounted) setState(() => selectedTile = 7);
-                if (!isTablet) pop(context);
-                Navigator.pushReplacement(
+                pop(context);
+                Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (context) => const EditProfileScreen(),

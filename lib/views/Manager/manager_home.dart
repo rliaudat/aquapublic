@@ -159,49 +159,6 @@ class _ManagerHomeScreenState extends State<ManagerHomeScreen> {
                               ),
                             ],
                           ),
-                          SizedBox(height: p),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Expanded(
-                                child: MouseRegion(
-                                  cursor: SystemMouseCursors.click,
-                                  child: AdminMenu(
-                                    icon: Icons.receipt_long,
-                                    text: 'ManagerHomeScreen.invoices'.tr(),
-                                    height: 8,
-                                    size: 50,
-                                    onTap: () => Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) =>
-                                            const InvoiceScreen(),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: MouseRegion(
-                                  cursor: SystemMouseCursors.click,
-                                  child: AdminMenu(
-                                    icon: Icons.edit,
-                                    text: 'ManagerHomeScreen.editProfile'.tr(),
-                                    height: 8,
-                                    size: 50,
-                                    onTap: () => Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) =>
-                                            const EditProfileScreen(),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
                           const SizedBox(height: 20),
                           if (!isTablet)
                             Button(

@@ -1,6 +1,8 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'dart:convert';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 
 class Reading {
   final String id;
@@ -15,10 +17,7 @@ class Reading {
   final double reading;
   final String townId;
   final double units;
-  final String? comment;
-  final String readingStatus;
-  final String billingStatus;
-  final String measurementStatus;
+  final List<String> comment;
   final bool isDelete;
   final Timestamp createdAt;
   final Timestamp updatedAt;
@@ -35,10 +34,7 @@ class Reading {
     required this.reading,
     required this.townId,
     required this.units,
-    this.comment,
-    required this.readingStatus,
-    this.billingStatus = 'open',
-    required this.measurementStatus,
+    required this.comment,
     required this.isDelete,
     required this.createdAt,
     required this.updatedAt,
@@ -57,10 +53,7 @@ class Reading {
     double? reading,
     String? townId,
     double? units,
-    String? comment,
-    String? readingStatus,
-    String? billingStatus,
-    String? measurementStatus,
+    List<String>? comment,
     bool? isDelete,
     Timestamp? createdAt,
     Timestamp? updatedAt,
@@ -79,9 +72,6 @@ class Reading {
       townId: townId ?? this.townId,
       units: units ?? this.units,
       comment: comment ?? this.comment,
-      readingStatus: readingStatus ?? this.readingStatus,
-      billingStatus: billingStatus ?? this.billingStatus,
-      measurementStatus: measurementStatus ?? this.measurementStatus,
       isDelete: isDelete ?? this.isDelete,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
@@ -103,9 +93,6 @@ class Reading {
       'townId': townId,
       'units': units,
       'comment': comment,
-      'readingStatus': readingStatus,
-      'billingStatus': billingStatus,
-      'measurementStatus': measurementStatus,
       'isDelete': isDelete,
       'createdAt': createdAt,
       'updatedAt': updatedAt,
@@ -126,10 +113,7 @@ class Reading {
       reading: map['reading'] as double,
       townId: map['townId'] as String,
       units: map['units'] as double,
-      comment: map['comment'] != null ? map['comment'] as String : null,
-      readingStatus: map['readingStatus'] as String,
-      billingStatus: map['billingStatus'] as String,
-      measurementStatus: map['measurementStatus'] as String,
+      comment: List<String>.from((map['comment'] as List<String>)),
       isDelete: map['isDelete'] as bool,
       createdAt: map['createdAt'],
       updatedAt: map['updatedAt'],
@@ -150,11 +134,7 @@ class Reading {
       reading: snapshot['reading'] as double,
       townId: snapshot['townId'] as String,
       units: snapshot['units'] as double,
-      comment:
-          snapshot['comment'] != null ? snapshot['comment'] as String : null,
-      readingStatus: snapshot['readingStatus'] as String,
-      billingStatus: snapshot['billingStatus'] as String,
-      measurementStatus: snapshot['measurementStatus'] as String,
+      comment: List<String>.from((snapshot['comment'] as List<String>)),
       isDelete: snapshot['isDelete'] as bool,
       createdAt: snapshot['createdAt'],
       updatedAt: snapshot['updatedAt'],
@@ -168,7 +148,7 @@ class Reading {
 
   @override
   String toString() {
-    return 'Reading(id: $id, amount: $amount, consumptionDays: $consumptionDays, date: $date, houseId: $houseId, inspectorId: $inspectorId, meterImageURL: $meterImageURL, previousReading: $previousReading, previousUnits: $previousUnits, reading: $reading, townId: $townId, units: $units, comment: $comment, readingStatus: $readingStatus, billingStatus: $billingStatus, measurementStatus: $measurementStatus, isDelete: $isDelete, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'Reading(id: $id, amount: $amount, consumptionDays: $consumptionDays, date: $date, houseId: $houseId, inspectorId: $inspectorId, meterImageURL: $meterImageURL, previousReading: $previousReading, previousUnits: $previousUnits, reading: $reading, townId: $townId, units: $units, comment: $comment, isDelete: $isDelete, createdAt: $createdAt, updatedAt: $updatedAt)';
   }
 
   @override
@@ -187,10 +167,7 @@ class Reading {
         other.reading == reading &&
         other.townId == townId &&
         other.units == units &&
-        other.comment == comment &&
-        other.readingStatus == readingStatus &&
-        other.billingStatus == billingStatus &&
-        other.measurementStatus == measurementStatus &&
+        listEquals(other.comment, comment) &&
         other.isDelete == isDelete &&
         other.createdAt == createdAt &&
         other.updatedAt == updatedAt;
@@ -211,9 +188,6 @@ class Reading {
         townId.hashCode ^
         units.hashCode ^
         comment.hashCode ^
-        readingStatus.hashCode ^
-        billingStatus.hashCode ^
-        measurementStatus.hashCode ^
         isDelete.hashCode ^
         createdAt.hashCode ^
         updatedAt.hashCode;

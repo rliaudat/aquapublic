@@ -3,7 +3,6 @@ import 'package:agua_med/Components/Reuseable.dart';
 import 'package:agua_med/_services/admin_Services.dart';
 import 'package:agua_med/_services/user_services.dart';
 import 'package:agua_med/providers/all_user_provider.dart';
-import 'package:agua_med/providers/user_provider.dart';
 import 'package:agua_med/theme.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
@@ -111,14 +110,8 @@ class _AllUsersScreenState extends State<AllUsersScreen> {
       child: Consumer<AllUserProvider>(
         builder: (context, provider, child) {
           return Scaffold(
-            drawer: isTablet ? Container() : const CustomDrawer(),
-            appBar: isTablet
-                ? CustomAppBar(
-                    title: 'All ${widget.header}',
-                    showButton: true,
-                    showAction: false,
-                  )
-                : CustomAppBar(title: 'All ${widget.header}'),
+            appBar:
+                isTablet ? null : CustomAppBar(title: 'All ${widget.header}'),
             floatingActionButton: isTablet
                 ? Container()
                 : FloatingActionButton(
@@ -140,34 +133,30 @@ class _AllUsersScreenState extends State<AllUsersScreen> {
               stream: UserServices.userByRoleStream(widget.role),
               builder: (context, snapshot) {
                 if (!snapshot.hasData) {
-                  return const Row(
+                  return Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(
+                      isTablet ? const CustomDrawer() : Container(),
+                      const Expanded(
                           child: Center(child: CircularProgressIndicator())),
                     ],
                   );
                 }
-                final users = context.read<UserProvider>().user?.role == 'Admin'
-                    ? snapshot.data!
-                    : snapshot.data!.where((user) {
-                        if (user.role == 'HouseOwner') {
-                          return user.town['id'] ==
-                              context.read<UserProvider>().user?.town['id'];
-                        } else {
-                          return user.town.any((town) =>
-                              town['id'] ==
-                              context.read<UserProvider>().user?.town['id']);
-                        }
-                      }).toList();
-
+                final users = snapshot.data!;
                 if (users.isEmpty) {
                   return Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      isTablet ? const CustomDrawer() : Container(),
                       Expanded(
                         child: Column(
                           children: [
+                            isTablet
+                                ? CustomAppBar(
+                                    title: 'All ${widget.header}',
+                                    showButton: false,
+                                    showAction: false)
+                                : Container(),
                             const SizedBox(height: 20),
                             Padding(
                               padding: EdgeInsets.symmetric(horizontal: p),
@@ -366,12 +355,19 @@ class _AllUsersScreenState extends State<AllUsersScreen> {
                 return Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    isTablet ? const CustomDrawer() : Container(),
                     Expanded(
                       child: SingleChildScrollView(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.start,
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+                            isTablet
+                                ? CustomAppBar(
+                                    title: 'All ${widget.header}',
+                                    showButton: false,
+                                    showAction: false)
+                                : Container(),
                             const SizedBox(height: 20),
                             Padding(
                               padding: EdgeInsets.symmetric(horizontal: p),
@@ -623,7 +619,8 @@ class _AllUsersScreenState extends State<AllUsersScreen> {
                                                                 onSelected: (value) =>
                                                                     handleStatus(
                                                                         value,
-                                                                        data.uid),
+                                                                        data[
+                                                                            'id']),
                                                                 itemBuilder:
                                                                     (context) {
                                                                   return [

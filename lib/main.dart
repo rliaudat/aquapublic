@@ -4,7 +4,6 @@ import 'package:agua_med/Initial/splashScreen.dart';
 import 'package:agua_med/providers/admin_home_provider.dart';
 import 'package:agua_med/providers/admin_invoice_provider.dart';
 import 'package:agua_med/providers/all_user_provider.dart';
-import 'package:agua_med/providers/billing_calculate_provider.dart';
 import 'package:agua_med/providers/create_owner_provider.dart';
 import 'package:agua_med/providers/edit_profile_provider.dart';
 import 'package:agua_med/providers/house_provider.dart';
@@ -22,6 +21,7 @@ import 'package:agua_med/providers/user_registration_provider.dart';
 import 'package:agua_med/theme.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -144,9 +144,6 @@ class MyApp extends StatelessWidget {
           ),
           ChangeNotifierProvider<AdminInvoiceProvider>(
             create: (_) => AdminInvoiceProvider(),
-          ),
-          ChangeNotifierProvider<BillingCalculateProvider>(
-            create: (_) => BillingCalculateProvider(),
           ),
         ],
         child: MultiBlocProvider(

@@ -28,13 +28,13 @@ class AuthService {
           // print("AuthService.phoneNumberAutomaticallyVerified".tr());
         },
         verificationFailed: (FirebaseAuthException e) {
-          // print("AuthService.verificationFailed".tr() + '${e.message}');
+          print("AuthService.verificationFailed".tr() + '${e.message}');
           onVerificationFailed(
               e.message ?? "AuthService.verificationFailed".tr());
         },
         codeSent: (String verificationId, int? resendToken) {
-          // print("AuthService.otpSentTo".tr() +
-          //     '$phone, Verification ID: $verificationId');
+          print("AuthService.otpSentTo".tr() +
+              '$phone, Verification ID: $verificationId');
           onCodeSent(verificationId);
           showToast(context, msg: '${'AuthService.otpSentTo'.tr()}$phone');
         },

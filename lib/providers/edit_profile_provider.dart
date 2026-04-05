@@ -21,15 +21,11 @@ class EditProfileProvider extends ChangeNotifier {
 
   void setSelectedImage(File value) {
     _selectedImage = value;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      notifyListeners();
-    });
+    notifyListeners();
   }
 
   void setWebImage(Uint8List value) {
     _webImage = value;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      notifyListeners();
-    });
+    notifyListeners();
   }
 }

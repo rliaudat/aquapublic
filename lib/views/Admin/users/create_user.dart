@@ -164,17 +164,21 @@ class _CreateOwnerScreenState extends State<CreateOwnerScreen> {
             Consumer<CreateOwnerProvider>(builder: (context, provider, child) {
           return Scaffold(
             appBar: isTablet
-                ? CustomAppBar(title: 'Create ${widget.header}')
+                ? null
                 : CustomAppBar(title: 'Create ${widget.header}'),
             body: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                isTablet ? const CustomDrawer() : Container(),
                 Expanded(
                   child: SingleChildScrollView(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.start,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        isTablet
+                            ? CustomAppBar(title: 'Create ${widget.header}')
+                            : Container(),
                         SizedBox(height: isTablet ? 20 : 0),
                         Padding(
                           padding: EdgeInsets.symmetric(horizontal: p),

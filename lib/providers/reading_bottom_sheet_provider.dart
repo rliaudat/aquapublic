@@ -18,8 +18,6 @@ class ReadingBottomSheetProvider extends ChangeNotifier {
 
   void setWebImage(Uint8List? value) {
     _webImage = value;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      notifyListeners();
-    });
+    notifyListeners();
   }
 }

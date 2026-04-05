@@ -157,11 +157,9 @@ class _LoginScreenState extends State<LoginScreen> {
       Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(
-              builder: (context) =>
-              //  isDesktop
-              //     ? const UserWebDashboardPage()
-              //     : 
-                  const ManagerHomeScreen()),
+              builder: (context) => isDesktop
+                  ? const UserWebDashboardPage()
+                  : const ManagerHomeScreen()),
           (route) => false);
     } else if (user.role == 'Inspector') {
       Navigator.pushAndRemoveUntil(
@@ -173,8 +171,7 @@ class _LoginScreenState extends State<LoginScreen> {
           context,
           MaterialPageRoute(
             builder: (context) =>
-                // isDesktop ? const UserWebDashboardPage() : 
-                const HomeScreen(),
+                isDesktop ? const UserWebDashboardPage() : const HomeScreen(),
           ),
           (route) => false);
     } else if (user.role == 'Admin') {

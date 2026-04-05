@@ -44,22 +44,16 @@ class UserRegistrationProvider extends ChangeNotifier {
 
   void setTown(Map<String, dynamic> value) {
     _selectedTown = value;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      notifyListeners();
-    });
+    notifyListeners();
   }
 
   void setSearchHover(bool value) {
     _searchHover = value;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      notifyListeners();
-    });
+    notifyListeners();
   }
 
   void setSearchQuery(String value) {
     _searchQuery = value;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      notifyListeners();
-    });
+    notifyListeners();
   }
 }
