@@ -32,17 +32,3 @@ windows/flutter/generated_plugins.cmake
 # IDE
 .idea/
 *.iml
-
-# Local Firebase / signing material
-.firebaserc
-.gitattributes
-.metadata
-.env*
-android/local.properties
-android/key.properties
-*.jks
-*.pem
-cors.json
-
-# Legacy hosting scratch dir
-public/

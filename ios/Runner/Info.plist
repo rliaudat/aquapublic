@@ -14,11 +14,6 @@
 	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
-	<key>CFBundleLocalizations</key>
-	<array>
-		<string>en</string>
-		<string>es</string>
-	</array>
 	<key>CFBundleName</key>
 	<string>aquamed</string>
 	<key>CFBundlePackageType</key>
@@ -32,7 +27,7 @@
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSCameraUsageDescription</key>
-	<string>Need access to camera for profile picture and meter reading</string>
+	<string>Need access to camera for profile picture</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Need access to photos for profile picture</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
@@ -41,6 +36,11 @@
 	<array>
 		<string>remote-notification</string>
 		<string>fetch</string>
+	</array>
+	<key>CFBundleLocalizations</key>
+	<array>
+		<string>en</string>
+		<string>es</string>
 	</array>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>

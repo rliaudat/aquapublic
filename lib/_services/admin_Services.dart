@@ -33,7 +33,7 @@ class AdminService {
   Stream<dynamic> fetchAllUsers(role) {
     if (userSD['role'] == 'Admin') {
       return firestore
-          .collection('user')
+          .collection('users')
           .where('role', isEqualTo: role)
           .where('isDeleted', isEqualTo: false)
           .snapshots()
@@ -50,7 +50,7 @@ class AdminService {
         var townId = town['id'];
         if (role == 'HouseOwner') {
           return firestore
-              .collection('user')
+              .collection('users')
               .where('role', isEqualTo: role)
               .where('town.id', isEqualTo: townId)
               .where('isDeleted', isEqualTo: false)
@@ -64,7 +64,7 @@ class AdminService {
           });
         } else {
           return firestore
-              .collection('user')
+              .collection('users')
               .where('role', isEqualTo: role)
               .where('isDeleted', isEqualTo: false)
               .snapshots()
@@ -95,7 +95,7 @@ class AdminService {
   //Registered Inspector==============================
   Stream registeredInspectors() {
     return firestore
-        .collection('user')
+        .collection('users')
         .where('role', isEqualTo: 'Inspector')
         .snapshots()
         .map((snapshot) {
@@ -121,7 +121,7 @@ class AdminService {
   //Registered Manager==============================
   Stream registeredManagers() {
     return firestore
-        .collection('user')
+        .collection('users')
         .where('role', isEqualTo: 'Manager')
         .snapshots()
         .map((snapshot) {
@@ -147,14 +147,17 @@ class AdminService {
   //block user========================================
   blockUser(String userId) async {
     await firestore
-        .collection('user')
+        .collection('users')
         .doc(userId)
         .update({'status': 'blocked'});
   }
 
   //UnblockUser========================================
   unblockUser(String userId) async {
-    await firestore.collection('user').doc(userId).update({'status': 'active'});
+    await firestore
+        .collection('users')
+        .doc(userId)
+        .update({'status': 'active'});
   }
 
   //Delete user======================================

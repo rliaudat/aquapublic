@@ -33,12 +33,7 @@
         "downloadTheApp": "Download the App",
         "supportEmail": "soporte@aguamed.com.ar",
         "supportPhone": "+549112345678",
-        "copyright": "© Copyrights 2025. All rights reserved.",
-        "home": "Home",
-        "about": "About",
-        "services": "Services",
-        "contact": "Contact",
-        "signIn": "SignIn"
+        "copyright": "© Copyrights 2025. All rights reserved."
     },
     "LoginScreen": {
         "pleaseEnterEmail": "Please enter email",
@@ -302,6 +297,8 @@
         "inspectors": "Inspectors",
         "userRegistrations": "User Registrations",
         "houses": "Houses",
+        "invoices": "Readings",
+        "editProfile": "Edit Profile",
         "logout": "Logout"
     },
     "InspectorHomeScreen": {
@@ -335,9 +332,6 @@
         "capture": "Capture",
         "process": "Process",
         "retake": "Retake",
-        "waiting": "Waiting...",
-        "resetting": "Resetting...",
-        "initializing": "Initializing...",
         "failedToExtractText": "Failed to extract text: ",
         "unableToDecodeImage": "Unable to decode image",
         "failedToUploadImage": "Failed to upload image: "
@@ -372,7 +366,6 @@
     "CustomDrawer": {
         "townManagers": "Town Managers",
         "invoices": "Invoices",
-        "readings": "Readings",
         "dashboard": "Dashboard",
         "houseOwners": "House Owners",
         "inspectors": "Inspectors",
@@ -382,18 +375,10 @@
         "rateUs": "Rate Us",
         "privacyAndPolicy": "Privacy & Policy",
         "termsAndConditions": "Terms & Conditions",
-        "deleteAccount": "Delete Account",
-        "deleteAccountConfirmation": "Are you sure you want to delete your account? This action cannot be undone and will permanently delete all your data.",
-        "accountDeleted": "Account deleted successfully",
-        "failedToDeleteAccount": "Failed to delete account",
         "logout": "Logout"
     },
     "AddUpdateHouses": {
         "pleaseEnterHouseName": "Please Enter House Name",
-        "pleaseEnterHouseState": "Please Enter House State",
-        "pleaseEnterCohabitants": "Please Enter Cohabitants",
-        "pleaseEnterMeterNumber": "Please Enter Meter Number",
-        "pleaseSelectHouseType": "Please Enter House Type",
         "justAMoment": "Just a moment...",
         "houseUpdatedSuccessfully": "House Updated Successfully",
         "houseAddedSuccessfully": "House Added Successfully",
@@ -403,14 +388,6 @@
         "town": "Town",
         "house": "House",
         "enterHouseName": "Enter House Name",
-        "houseState": "House State",
-        "enterHouseState": "Enter House State",
-        "cohabitants": "Cohabitants",
-        "enterCohabitants": "Enter Cohabitants",
-        "meterNumber": "Meter Number",
-        "enterMeterNumber": "Enter Meter Number",
-        "houseType": "House Type",
-        "selectHouseType": "Select House Type",
         "add": "Add",
         "update": "Update"
     },
@@ -422,23 +399,7 @@
         "addTown": "Add Town",
         "addTownName": "Add Town Name",
         "unitPriceM3": "Unit Price m3",
-        "updateTown": "Update Town",
-        "totalAmountToDivideByConsumptions": "Total amount to divide based on consumption",
-        "totalAmountToDivideByHouse": "Total amount to be divided by based number of houses",
-        "fixedAmountToBeCharged": "Fixed amount to be charged to each house"
-    },
-    "CalculateBill": {
-        "calculateBills": "Calculate Bills",
-        "addTownName": "Add Town Name",
-        "unitPriceM3": "Unit Price m3",
-        "totalAmountToDivideByConsumptions": "Total amount to divide based on consumption",
-        "totalAmountToDivideByHouse": "Total amount to be divided by based number of houses",
-        "fixedAmountToBeCharged": "Fixed amount to be charged to each house",
-        "calculate": "Calculate",
-        "CalculateBill.refreshStatus": "Refresh",
-        "CalculateBill.pendingMeasurements": "Houses Reading Pending",
-        "CalculateBill.cannotCalculate": "Billing can't be calculated",
-        "CalculateBill.measurementsPending": "Readings Pending"
+        "updateTown": "Update Town"
     },
     "FilterBottomSheet": {
         "sortAndFilter": "Sort & Filter",

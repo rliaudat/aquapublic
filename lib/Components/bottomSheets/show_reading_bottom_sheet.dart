@@ -46,7 +46,7 @@ class _ShowReadingBottomSheetState extends State<ShowReadingBottomSheet> {
   var reading = TextEditingController();
   var description = TextEditingController();
 
-  String? comment;
+  final List<String> comments = [];
   late House data;
 
   // Functions
@@ -90,30 +90,6 @@ class _ShowReadingBottomSheetState extends State<ShowReadingBottomSheet> {
       webImage,
       quality: 80,
     );
-  }
-
-  String _generateSafeId(String houseNumber, int month, int year) {
-    // Handle null/empty/N/A cases
-    if (houseNumber.isEmpty || houseNumber == 'N/A') {
-      return 'default_${month.toString().padLeft(2, '0')}_$year';
-    }
-
-    // Basic sanitization
-    var safeId = houseNumber
-        .toLowerCase()
-        .replaceAll(RegExp(r'[^a-z0-9]'), '_') // Replace special chars
-        .replaceAll(RegExp(r'_+'), '_'); // Collapse multiple underscores
-
-    // Ensure non-empty and limit length safely
-    safeId = safeId.isEmpty ? 'house' : safeId;
-    safeId = safeId.substring(0, safeId.length > 20 ? 20 : safeId.length);
-
-    return '${safeId}_${month.toString().padLeft(2, '0')}_$year';
-  }
-
-  // For readings
-  String _generateReadingId(String houseNumber, int month, int year) {
-    return 'rd_${_generateSafeId(houseNumber, month, year)}';
   }
 
   Future<void> doSubmitReading(
@@ -164,11 +140,7 @@ class _ShowReadingBottomSheetState extends State<ShowReadingBottomSheet> {
 
         ReadingServices.create(
           Reading(
-            id: _generateReadingId(
-              data.id,
-              DateTime.now().month,
-              DateTime.now().year,
-            ),
+            id: '',
             amount: amount,
             consumptionDays: consumptionDays,
             date: Timestamp.now(),
@@ -180,10 +152,8 @@ class _ShowReadingBottomSheetState extends State<ShowReadingBottomSheet> {
             reading: currentReadingValue,
             townId: data.townID,
             units: units,
-            comment: comment,
+            comment: comments,
             isDelete: false,
-            readingStatus: comment == null ? 'approved' : 'pending',
-            measurementStatus: 'completed',
             createdAt: Timestamp.now(),
             updatedAt: Timestamp.now(),
           ),
@@ -192,11 +162,6 @@ class _ShowReadingBottomSheetState extends State<ShowReadingBottomSheet> {
           data.id,
           {
             'lastReading': {
-              'id': _generateReadingId(
-                data.id,
-                DateTime.now().month,
-                DateTime.now().year,
-              ),
               'amount': amount,
               'consumptionDays': consumptionDays,
               'date': Timestamp.now(),
@@ -205,7 +170,6 @@ class _ShowReadingBottomSheetState extends State<ShowReadingBottomSheet> {
               'previousReading': previousReadingValue,
               'previousUnits': previousUnit,
               'reading': currentReadingValue,
-              'measurementStatus': 'completed',
               'units': units,
             },
           },
@@ -325,6 +289,7 @@ class _ShowReadingBottomSheetState extends State<ShowReadingBottomSheet> {
   Future<Locale?> discalimerBox(
     BuildContext context,
   ) async {
+    bool isEnglishSelected = true;
     return await showDialog<Locale>(
       context: context,
       builder: (context) {
@@ -370,26 +335,16 @@ class _ShowReadingBottomSheetState extends State<ShowReadingBottomSheet> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Container(
+                            height: 30,
                             width: 100,
                             decoration: BoxDecoration(
                                 color: whiteColor,
                                 borderRadius: BorderRadius.circular(13)),
                             child: TextButton(
                                 onPressed: () {
-                                  comment = description.text;
+                                  comments.add(description.text);
                                   description.clear();
                                   Navigator.pop(context);
-                                  submitReadingWithNavigation(
-                                    context,
-                                    image: context
-                                        .read<ReadingBottomSheetProvider>()
-                                        .image,
-                                    webImage: context
-                                        .read<ReadingBottomSheetProvider>()
-                                        .webImage,
-                                    inspectorUID:
-                                        context.read<UserProvider>().user!.uid,
-                                  );
                                 },
                                 child: Text(
                                   'userRegistrationScreen.confirm'.tr(),
@@ -397,6 +352,7 @@ class _ShowReadingBottomSheetState extends State<ShowReadingBottomSheet> {
                                 )),
                           ),
                           Container(
+                            height: 30,
                             width: 100,
                             decoration: BoxDecoration(
                                 color: whiteColor,

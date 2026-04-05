@@ -51,10 +51,18 @@ class TownsScreen extends StatelessWidget {
         return Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            isTablet ? const CustomDrawer() : Container(),
             Expanded(
               child: SingleChildScrollView(
                 child: Column(
                   children: [
+                    isTablet
+                        ? CustomAppBar(
+                            title: 'TownsScreen.town'.tr(),
+                            showButton: false,
+                            showAction: false,
+                          )
+                        : Container(),
                     Padding(
                       padding: EdgeInsets.symmetric(horizontal: p),
                       child: Column(
@@ -265,9 +273,8 @@ class TownsScreen extends StatelessWidget {
                                     children: List.generate(
                                         snapshot.data?.length ?? 0, (index) {
                                       final data = snapshot.data![index];
-                                      return data.name.toLowerCase().contains(
-                                              provider.query?.toLowerCase() ??
-                                                  '')
+                                      return data.name
+                                              .contains(provider.query ?? '')
                                           ? GestureDetector(
                                               onTap: () {
                                                 Navigator.push(

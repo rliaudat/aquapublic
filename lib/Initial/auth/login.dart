@@ -1,9 +1,11 @@
 import 'dart:io';
 
 import 'package:agua_med/Initial/auth/forgot_password.dart';
+import 'package:agua_med/Initial/auth/otp.dart';
 import 'package:agua_med/Initial/auth/signup.dart';
 import 'package:agua_med/Initial/auth/sms_verification_screen.dart';
 import 'package:agua_med/Initial/splashScreen.dart';
+import 'package:agua_med/_helpers/encrypption.dart';
 import 'package:agua_med/bloc/authentication/authentication_bloc.dart';
 import 'package:agua_med/models/user.dart';
 import 'package:agua_med/providers/login_provider.dart';
@@ -14,7 +16,11 @@ import 'package:agua_med/views/Admin/admin_home.dart';
 import 'package:agua_med/views/Inspector/inspector_home.dart';
 import 'package:agua_med/views/Manager/manager_home.dart';
 import 'package:agua_med/views/User/home.dart';
+import 'package:agua_med/views/User/web_dashboard.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:email_validator/email_validator.dart';
+import 'package:ephone_field/ephone_field.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
@@ -22,6 +28,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
 import 'package:responsive_framework/responsive_framework.dart';
+import '../../_services/auth_services.dart';
 import '../../loading.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -38,7 +45,9 @@ class _LoginScreenState extends State<LoginScreen> {
   var token = TextEditingController();
 
   FirebaseAuth auth = FirebaseAuth.instance;
+  FirebaseFirestore firestore = FirebaseFirestore.instance;
   FirebaseMessaging firebaseMessaging = FirebaseMessaging.instance;
+  AuthService authService = AuthService();
 
   goAuth() {
     unFocus(context);
@@ -58,7 +67,11 @@ class _LoginScreenState extends State<LoginScreen> {
         );
       }
     } else {
-      doLoginWithEmail();
+      if (EmailValidator.validate(identifier.text)) {
+        doLoginWithEmail();
+      } else {
+        doLoginWithPhone();
+      }
     }
   }
 
@@ -73,8 +86,68 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
+  doLoginWithPhone() async {
+    showLoader(context, 'LoginScreen.justAMoment'.tr());
+    try {
+      firestore
+          .collection('users')
+          .where('phone', isEqualTo: identifier.text)
+          .get()
+          .then((value) async {
+        Map<String, dynamic> userData = value.docs.first.data();
+        String accountPassword = decryptPass(
+            text: userData['encryptedPassword'],
+            iv: userData['iv'],
+            key: 'SECRET_KEY');
+
+        if (accountPassword == pass.text) {
+          if (value.docs.isNotEmpty) {
+            await authService.sendOtpToPhone(
+              context: context,
+              phone: identifier.text,
+              onCodeSent: (String verificationId) {
+                pop(context);
+                showToast(context,
+                    msg: '${'LoginScreen.otpSentTo'.tr()} ${identifier.text}');
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => OtpScreen(
+                      verificationId: verificationId,
+                      user: value.docs.first,
+                      platform: platform.text,
+                      token: token.text,
+                    ),
+                  ),
+                );
+              },
+              onVerificationFailed: (String error) {
+                pop(context);
+                showToast(context, msg: error);
+              },
+            );
+          } else {
+            pop(context);
+            showToast(context,
+                msg: 'LoginScreen.pleaseEnterValidCredentials'.tr());
+          }
+        } else {
+          pop(context);
+          showToast(
+            context,
+            msg: 'LoginScreen.pleaseEnterValidCredentials'.tr(),
+          );
+        }
+      });
+    } catch (e) {
+      pop(context);
+      showToast(context, msg: 'LoginScreen.pleaseEnterValidCredentials'.tr());
+    }
+  }
+
   goNext() async {
     AppUser user = context.read<UserProvider>().user!;
+    bool isDesktop = ResponsiveBreakpoints.of(context).largerThan(TABLET);
     String userStatus = user.status;
     if (userStatus == 'pending') {
       showToast(context, msg: 'LoginScreen.pleaseWaitForAdminApproval'.tr());
@@ -84,11 +157,9 @@ class _LoginScreenState extends State<LoginScreen> {
       Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(
-              builder: (context) =>
-                  //  isDesktop
-                  //     ? const UserWebDashboardPage()
-                  //     :
-                  const ManagerHomeScreen()),
+              builder: (context) => isDesktop
+                  ? const UserWebDashboardPage()
+                  : const ManagerHomeScreen()),
           (route) => false);
     } else if (user.role == 'Inspector') {
       Navigator.pushAndRemoveUntil(
@@ -100,8 +171,7 @@ class _LoginScreenState extends State<LoginScreen> {
           context,
           MaterialPageRoute(
             builder: (context) =>
-                // isDesktop ? const UserWebDashboardPage() :
-                const HomeScreen(),
+                isDesktop ? const UserWebDashboardPage() : const HomeScreen(),
           ),
           (route) => false);
     } else if (user.role == 'Admin') {
@@ -232,15 +302,23 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                               const SizedBox(height: 50),
                               Text(
-                                'SignUpScreen.email'.tr(),
+                                'LoginScreen.emailOrPhone'.tr(),
                                 style: const TextStyle(
                                     fontWeight: FontWeight.bold),
                               ),
                               const SizedBox(height: 8),
-                              TextField(
-                                controller: identifier,
+                              EPhoneField(
+                                menuType: PickerMenuType.bottomSheet,
+                                searchInputDecoration: InputDecoration(
+                                    hintText: 'LoginScreen.search'.tr()),
+                                initialCountry: Country.argentina,
+                                pickerHeight: CountryPickerHeigth.h50,
+                                onChanged: (p0) {
+                                  identifier.text = p0;
+                                },
                                 decoration: InputDecoration(
-                                  hintText: 'SignUpScreen.email'.tr(),
+                                  hintText:
+                                      'LoginScreen.enterEmailOrPhone'.tr(),
                                   prefixIcon: Icon(Icons.email_outlined,
                                       color: borderColor),
                                 ),

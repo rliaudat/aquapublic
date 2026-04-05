@@ -10,11 +10,13 @@ import 'package:agua_med/Components/Reuseable.dart';
 import 'package:agua_med/views/Admin/web/landing_Page.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dropdown_search/dropdown_search.dart';
+import 'package:ephone_field/ephone_field.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:intl_phone_number_input/intl_phone_number_input.dart';
 import 'package:provider/provider.dart';
 import 'package:responsive_framework/responsive_framework.dart';
 import 'package:easy_localization/easy_localization.dart';
@@ -32,6 +34,13 @@ class _SignUpScreenState extends State<SignUpScreen> {
   var firstName = TextEditingController();
   var lastName = TextEditingController();
   var email = TextEditingController();
+  PhoneNumber phoneNumber = PhoneNumber(
+      isoCode: Country.argentina.alpha2,
+      dialCode: '+${Country.argentina.dialCode}',
+      phoneNumber: '');
+  var phone = TextEditingController();
+  dynamic isoCode;
+  dynamic dialCode;
   var password = TextEditingController();
   var confirmPassword = TextEditingController();
 
@@ -82,6 +91,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
     if (firstName.text.isEmpty ||
         lastName.text.isEmpty ||
         email.text.isEmpty ||
+        email.text.isEmpty ||
+        phone.text.isEmpty ||
         context.read<SignUpProvider>().selectedTown == null ||
         context.read<SignUpProvider>().selectedHouse == null ||
         password.text.isEmpty ||
@@ -92,6 +103,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
         showToast(context, msg: 'SignUpScreen.lastNameRequired'.tr());
       } else if (email.text.isEmpty) {
         showToast(context, msg: 'SignUpScreen.emailRequired'.tr());
+      } else if (phone.text.isEmpty) {
+        showToast(context, msg: 'SignUpScreen.phoneNumberRequired'.tr());
       } else if (context.read<SignUpProvider>().selectedTown == null) {
         showToast(context, msg: 'SignUpScreen.townRequired'.tr());
       } else if (context.read<SignUpProvider>().selectedHouse == null) {
@@ -121,9 +134,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
             firstName: firstName.text,
             lastName: lastName.text,
             email: email.text,
-            phoneNumber: '',
-            isoCode: '',
-            dialCode: '',
+            phoneNumber: phone.text,
+            isoCode: isoCode,
+            dialCode: dialCode,
             role: 'pending',
             status: 'pending',
             platform: platform.text,
@@ -280,6 +293,49 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           decoration: InputDecoration(
                             hintText: 'SignUpScreen.email'.tr(),
                             prefixIcon: Icon(Icons.email, color: borderColor),
+                          ),
+                        ),
+                        SizedBox(height: p),
+                        Text(
+                          'SignUpScreen.phoneNumber'.tr(),
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: const EdgeInsets.only(left: 12),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: borderColor),
+                            borderRadius: BorderRadius.circular(p),
+                          ),
+                          child: InternationalPhoneNumberInput(
+                            initialValue: phoneNumber,
+                            autoValidateMode: AutovalidateMode.disabled,
+                            onInputChanged: (PhoneNumber number) {
+                              phone.text = number.phoneNumber!;
+                              isoCode = number.isoCode!;
+                              dialCode = number.dialCode!;
+                            },
+                            searchBoxDecoration: InputDecoration(
+                              hintText: 'SignUpScreen.search'.tr(),
+                            ),
+                            selectorConfig: const SelectorConfig(
+                              selectorType: PhoneInputSelectorType.BOTTOM_SHEET,
+                              leadingPadding: 0,
+                              trailingSpace: false,
+                              setSelectorButtonAsPrefixIcon: false,
+                              useBottomSheetSafeArea: true,
+                            ),
+                            inputDecoration: InputDecoration(
+                              hintText: 'SignUpScreen.phoneNumber'.tr(),
+                              border: InputBorder.none,
+                              enabledBorder: InputBorder.none,
+                              focusedBorder: InputBorder.none,
+                              errorBorder: InputBorder.none,
+                              disabledBorder: InputBorder.none,
+                              focusedErrorBorder: InputBorder.none,
+                              contentPadding: const EdgeInsets.only(
+                                  left: 0, top: 15, bottom: 15, right: 0),
+                            ),
                           ),
                         ),
                         SizedBox(height: p),

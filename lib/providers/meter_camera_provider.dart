@@ -16,30 +16,22 @@ class MeterCameraProvider extends ChangeNotifier {
 
   void setReading(String value) {
     _reading = value;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      notifyListeners();
-    });
+    notifyListeners();
   }
 
   void setIsCameraControllerInit(bool value) {
     _isCameraControllerInit = value;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      notifyListeners();
-    });
+    notifyListeners();
   }
 
   void setOriginalImage(XFile? value) {
     _originalImage = value;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      notifyListeners();
-    });
+    notifyListeners();
   }
 
   void setWebImageBytes(Uint8List? value) {
     _webImageBytes = value;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      notifyListeners();
-    });
+    notifyListeners();
   }
 
   void reset() {

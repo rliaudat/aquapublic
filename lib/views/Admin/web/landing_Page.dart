@@ -258,7 +258,7 @@ class _LandingPageState extends State<LandingPage> {
                         width: 80,
                         color: secondaryColor,
                         textColor: greyColor,
-                        text: 'LandingPage.signIn'.tr(),
+                        text: 'SignIn',
                         onPressed: () => Navigator.push(
                             context,
                             MaterialPageRoute(

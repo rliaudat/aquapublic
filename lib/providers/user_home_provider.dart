@@ -18,16 +18,12 @@ class UserHomeProvider extends ChangeNotifier {
 
   void setSearchValue(String? value) {
     _searchValue = value;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      notifyListeners();
-    });
+    notifyListeners();
   }
 
   void setShoePendingOnly(bool value) {
     _showPendingOnly = value;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      notifyListeners();
-    });
+    notifyListeners();
   }
 
   void reset() {

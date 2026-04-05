@@ -1,6 +1,4 @@
-// ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'dart:convert';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 
@@ -10,9 +8,6 @@ class House {
   final String townID;
   final bool isDelete;
   final Map<String, dynamic>? lastReading;
-  final int? cohabitants;
-  final String meterNumber;
-  final String? houseType;
   final Timestamp createdAt;
   final Timestamp updatedAt;
   House({
@@ -21,9 +16,6 @@ class House {
     required this.townID,
     required this.isDelete,
     this.lastReading,
-    this.cohabitants,
-    required this.meterNumber,
-    this.houseType,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -34,9 +26,6 @@ class House {
     String? townID,
     bool? isDelete,
     Map<String, dynamic>? lastReading,
-    int? cohabitants,
-    String? meterNumber,
-    String? houseType,
     Timestamp? createdAt,
     Timestamp? updatedAt,
   }) {
@@ -46,9 +35,6 @@ class House {
       townID: townID ?? this.townID,
       isDelete: isDelete ?? this.isDelete,
       lastReading: lastReading ?? this.lastReading,
-      cohabitants: cohabitants ?? this.cohabitants,
-      meterNumber: meterNumber ?? this.meterNumber,
-      houseType: houseType ?? this.houseType,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -61,9 +47,6 @@ class House {
       'townID': townID,
       'isDelete': isDelete,
       'lastReading': lastReading,
-      'cohabitants': cohabitants,
-      'meterNumber': meterNumber,
-      'houseType': houseType,
       'createdAt': createdAt,
       'updatedAt': updatedAt,
     };
@@ -79,9 +62,6 @@ class House {
           ? Map<String, dynamic>.from(
               (map['lastReading'] as Map<String, dynamic>))
           : null,
-      cohabitants: map['cohabitants'] as int?,
-      meterNumber: map['meterNumber'] as String,
-      houseType: map['houseType'] as String?,
       createdAt: map['createdAt'],
       updatedAt: map['updatedAt'],
     );
@@ -95,16 +75,8 @@ class House {
       isDelete: snapshot['isDelete'] as bool,
       lastReading: snapshot['lastReading'] != null
           ? Map<String, dynamic>.from(
-              (snapshot['lastReading'] as Map<String, dynamic>))
-          : null,
-      cohabitants: (snapshot.data() as Map).containsKey('cohabitants')
-          ? snapshot['cohabitants'] as int?
-          : null,
-      meterNumber: (snapshot.data() as Map).containsKey('meterNumber')
-          ? snapshot['meterNumber'] as String
-          : '',
-      houseType: (snapshot.data() as Map).containsKey('houseType')
-          ? snapshot['houseType'] as String?
+              (snapshot['lastReading'] as Map<String, dynamic>),
+            )
           : null,
       createdAt: snapshot['createdAt'],
       updatedAt: snapshot['updatedAt'],
@@ -118,7 +90,7 @@ class House {
 
   @override
   String toString() {
-    return 'House(id: $id, name: $name, townID: $townID, isDelete: $isDelete, lastReading: $lastReading, cohabitants: $cohabitants, meterNumber: $meterNumber, houseType: $houseType, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'House(id: $id, name: $name, townID: $townID, isDelete: $isDelete, lastReading: $lastReading, createdAt: $createdAt, updatedAt: $updatedAt)';
   }
 
   @override
@@ -130,9 +102,6 @@ class House {
         other.townID == townID &&
         other.isDelete == isDelete &&
         mapEquals(other.lastReading, lastReading) &&
-        other.cohabitants == cohabitants &&
-        other.meterNumber == meterNumber &&
-        other.houseType == houseType &&
         other.createdAt == createdAt &&
         other.updatedAt == updatedAt;
   }
@@ -144,9 +113,6 @@ class House {
         townID.hashCode ^
         isDelete.hashCode ^
         lastReading.hashCode ^
-        cohabitants.hashCode ^
-        meterNumber.hashCode ^
-        houseType.hashCode ^
         createdAt.hashCode ^
         updatedAt.hashCode;
   }

@@ -147,13 +147,4 @@ class UserServices {
               }).toList(),
             );
   }
-
-  static Future<String> deleteUser(String uid) async {
-    try {
-      await _userCollection.doc(uid).delete();
-      return 'AuthService.success'.tr();
-    } on FirebaseException catch (e) {
-      return '${'AuthService.error'.tr()} ${e.message}';
-    }
-  }
 }

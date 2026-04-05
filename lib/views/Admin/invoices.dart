@@ -515,15 +515,15 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
   Widget build(BuildContext context) {
     bool isTablet = ResponsiveBreakpoints.of(context).largerThan(TABLET);
     return Scaffold(
-      drawer: isTablet ? Container() : const CustomDrawer(),
       appBar: isTablet
-          ? const CustomAppBar(title: 'Invoices', showButton: true)
+          ? null
           : const CustomAppBar(title: 'Invoices', showButton: true),
       body: Consumer<AdminInvoiceProvider>(
         builder: (context, provider, child) {
           return Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              isTablet ? const CustomDrawer() : Container(),
               Expanded(
                 child: SingleChildScrollView(
                   scrollDirection: Axis.vertical,
@@ -531,6 +531,10 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
+                      isTablet
+                          ? const CustomAppBar(
+                              title: 'Invoices', showButton: false)
+                          : Container(),
                       Padding(
                         padding: EdgeInsets.symmetric(horizontal: p),
                         child: Column(

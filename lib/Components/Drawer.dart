@@ -12,7 +12,7 @@ import 'package:agua_med/views/Inspector/search_house_bill.dart';
 import 'package:agua_med/edit_profile.dart';
 import 'package:agua_med/views/Manager/manager_home.dart';
 import 'package:agua_med/views/User/home.dart';
-import 'package:agua_med/_services/auth_Services.dart';
+import 'package:agua_med/views/User/web_dashboard.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -34,6 +34,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
   @override
   Widget build(BuildContext context) {
     bool isTablet = ResponsiveBreakpoints.of(context).largerThan(TABLET);
+    bool isDesktop = ResponsiveBreakpoints.of(context).largerThan(TABLET);
     AppUser user = context.read<UserProvider>().user!;
     return Drawer(
       shape: const RoundedRectangleBorder(
@@ -91,7 +92,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
                 pop(context);
 
                 if (user.role == 'Admin') {
-                  Navigator.pushReplacement(
+                  Navigator.push(
                           context,
                           MaterialPageRoute(
                               builder: (context) => const AdminHomeScreen()))
@@ -99,18 +100,16 @@ class _CustomDrawerState extends State<CustomDrawer> {
                     if (mounted) setState(() => selectedTile = 0);
                   });
                 } else if (user.role == 'Manager') {
-                  Navigator.pushReplacement(
+                  Navigator.push(
                       context,
                       MaterialPageRoute(
-                          builder: (context) =>
-                              // isDesktop
-                              //     ? const UserWebDashboardPage()
-                              //     :
-                              const ManagerHomeScreen())).then((value) {
+                          builder: (context) => isDesktop
+                              ? const UserWebDashboardPage()
+                              : const ManagerHomeScreen())).then((value) {
                     if (mounted) setState(() => selectedTile = 0);
                   });
                 } else if (user.role == 'Inspector') {
-                  Navigator.pushReplacement(
+                  Navigator.push(
                       context,
                       MaterialPageRoute(
                           builder: (context) =>
@@ -118,14 +117,12 @@ class _CustomDrawerState extends State<CustomDrawer> {
                     if (mounted) setState(() => selectedTile = 0);
                   });
                 } else {
-                  Navigator.pushReplacement(
+                  Navigator.push(
                       context,
                       MaterialPageRoute(
-                          builder: (context) =>
-                              //  isDesktop
-                              //     ? const UserWebDashboardPage()
-                              //     :
-                              const HomeScreen())).then((value) {
+                          builder: (context) => isDesktop
+                              ? const UserWebDashboardPage()
+                              : const HomeScreen())).then((value) {
                     if (mounted) setState(() => selectedTile = 0);
                   });
                 }
@@ -143,7 +140,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
                 onTap: () {
                   if (mounted) setState(() => selectedTile = 1);
                   pop(context);
-                  Navigator.pushReplacement(
+                  Navigator.push(
                       context,
                       MaterialPageRoute(
                           builder: (context) => const AllUsersScreen(
@@ -164,7 +161,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
                 onTap: () {
                   if (mounted) setState(() => selectedTile = 2);
                   pop(context);
-                  Navigator.pushReplacement(
+                  Navigator.push(
                       context,
                       MaterialPageRoute(
                           builder: (context) => const AllUsersScreen(
@@ -185,7 +182,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
                 onTap: () {
                   if (mounted) setState(() => selectedTile = 3);
                   pop(context);
-                  Navigator.pushReplacement(
+                  Navigator.push(
                       context,
                       MaterialPageRoute(
                           builder: (context) =>
@@ -205,7 +202,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
                 onTap: () {
                   if (mounted) setState(() => selectedTile = 4);
                   pop(context);
-                  Navigator.pushReplacement(
+                  Navigator.push(
                           context,
                           MaterialPageRoute(
                               builder: (context) => const TownsScreen()))
@@ -225,7 +222,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
                 onTap: () {
                   if (mounted) setState(() => selectedTile = 5);
                   pop(context);
-                  Navigator.pushReplacement(
+                  Navigator.push(
                       context,
                       MaterialPageRoute(
                           builder: (context) => const AllUsersScreen(
@@ -240,65 +237,41 @@ class _CustomDrawerState extends State<CustomDrawer> {
                 size: 22,
                 selected: selectedTile == 5,
               ),
-            // if (user.role == 'Admin')
-            //   DrawerTiles(
-            //     text: 'CustomDrawer.readings'.tr(),
-            //     onTap: () {
-            //       if (mounted) setState(() => selectedTile = 8);
-            //       pop(context);
-            //       Navigator.pushReplacement(
-            //         context,
-            //         MaterialPageRoute(
-            //           builder: (context) => const UserWebDashboardPage(),
-            //         ),
-            //       ).then(
-            //         (value) {
-            //           if (mounted) setState(() => selectedTile = 8);
-            //         },
-            //       );
-            //     },
-            //     imagePath: 'assets/images/reading.png',
-            //     rowWidth:
-            //         isTablet ? width(context) * 0.02 : width(context) * 0.05,
-            //     size: 20,
-            //     selected: selectedTile == 8,
-            //   ),
-            if (user.role == 'Admin' || user.role == 'Manager')
-              DrawerTiles(
-                text: 'CustomDrawer.invoices'.tr(),
-                onTap: () {
-                  if (mounted) setState(() => selectedTile = 6);
-                  pop(context);
-                  if (user.role == 'Admin' || user.role == 'Manager') {
-                    Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(
-                                builder: (context) => const InvoiceScreen()))
-                        .then((value) {
-                      if (mounted) setState(() => selectedTile = 6);
-                    });
-                  } else {
-                    Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                            builder: (context) =>
-                                const SearchHouseScreen())).then((value) {
-                      if (mounted) setState(() => selectedTile = 6);
-                    });
-                  }
-                },
-                imagePath: 'assets/images/invoice.png',
-                rowWidth:
-                    isTablet ? width(context) * 0.02 : width(context) * 0.05,
-                size: 20,
-                selected: selectedTile == 6,
-              ),
+            DrawerTiles(
+              text: 'CustomDrawer.invoices'.tr(),
+              onTap: () {
+                if (mounted) setState(() => selectedTile = 6);
+                pop(context);
+                if (user.role == 'Admin' || user.role == 'Manager') {
+                  Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => const InvoiceScreen()))
+                      .then((value) {
+                    if (mounted) setState(() => selectedTile = 6);
+                  });
+                } else {
+                  Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => const SearchHouseScreen()))
+                      .then((value) {
+                    if (mounted) setState(() => selectedTile = 6);
+                  });
+                }
+              },
+              imagePath: 'assets/images/invoice.png',
+              rowWidth:
+                  isTablet ? width(context) * 0.02 : width(context) * 0.05,
+              size: 20,
+              selected: selectedTile == 6,
+            ),
             DrawerTiles(
               text: 'CustomDrawer.editProfile'.tr(),
               onTap: () {
                 if (mounted) setState(() => selectedTile = 7);
                 pop(context);
-                Navigator.pushReplacement(
+                Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (context) => const EditProfileScreen(),
@@ -367,78 +340,6 @@ class _CustomDrawerState extends State<CustomDrawer> {
             //   padding: 3,
             //   selected: selectedTile == 10,
             // ),
-            DrawerTiles(
-              text: 'CustomDrawer.deleteAccount'.tr(),
-              onTap: () async {
-                showDialog(
-                  context: context,
-                  builder: (BuildContext dialogContext) {
-                    return AlertDialog(
-                      title: Text('CustomDrawer.deleteAccount'.tr()),
-                      content:
-                          Text('CustomDrawer.deleteAccountConfirmation'.tr()),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(dialogContext),
-                          child: Text('userRegistrationScreen.cancel'.tr()),
-                        ),
-                        TextButton(
-                          onPressed: () async {
-                            Navigator.pop(dialogContext);
-                            showLoader(context, 'LoginScreen.justAMoment'.tr());
-
-                            try {
-                              AuthService authService = AuthService();
-                              String result = await authService.deleteAccount();
-
-                              Navigator.pop(context); // Close loading dialog
-
-                              if (result == 'AuthService.success'.tr()) {
-                                // Clear user session and logout
-                                context.read<UserProvider>().setUser(null);
-                                try {
-                                  await authService.auth.signOut();
-                                } catch (e) {
-                                  // User already logged out after deletion
-                                }
-                                showToast(context,
-                                    msg: 'CustomDrawer.accountDeleted'.tr());
-                                Navigator.pushAndRemoveUntil(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => const LoginScreen(),
-                                  ),
-                                  (route) => false,
-                                );
-                              } else {
-                                showToast(context,
-                                    msg: 'CustomDrawer.failedToDeleteAccount'
-                                        .tr());
-                              }
-                            } catch (e) {
-                              Navigator.pop(context); // Close loading dialog
-                              showToast(context,
-                                  msg: 'CustomDrawer.failedToDeleteAccount'
-                                      .tr());
-                            }
-                          },
-                          child: Text(
-                            'userRegistrationScreen.confirm'.tr(),
-                            style: TextStyle(color: redColor),
-                          ),
-                        ),
-                      ],
-                    );
-                  },
-                );
-              },
-              icon: Icons.delete_forever,
-              rowWidth:
-                  isTablet ? width(context) * 0.015 : width(context) * 0.029,
-              size: 22,
-              padding: 3,
-              selected: false,
-            ),
             DrawerTiles(
               text: 'CustomDrawer.logout'.tr(),
               onTap: () async {

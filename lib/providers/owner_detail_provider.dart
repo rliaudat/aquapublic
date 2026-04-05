@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:agua_med/_services/house_services.dart';
 import 'package:agua_med/_services/town_services.dart';
+import 'package:agua_med/models/user.dart';
 import 'package:flutter/material.dart';
 
 class OwnerDetailProvider extends ChangeNotifier {
@@ -25,14 +26,25 @@ class OwnerDetailProvider extends ChangeNotifier {
   File? get profileImage => _profileImage;
   bool get updateHover => _updateHover;
 
-  void fetchTowns() async {
-    var listedTowns = await TownServices.fetchAllWithDelete();
-    _towns = listedTowns.map((data) {
-      return {'id': data.id, 'name': data.name};
-    }).toList();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      notifyListeners();
-    });
+  void fetchTowns(AppUser currentUser) async {
+    if (currentUser.role == 'Admin') {
+      var listedTowns = await TownServices.fetchAllWithDelete();
+      _towns = listedTowns.map((data) {
+        return {'id': data.id, 'name': data.name};
+      }).toList();
+    } else if (currentUser.role == 'Manager') {
+      _towns = currentUser.town == null
+          ? []
+          : [Map<String, dynamic>.from(currentUser.town)];
+    } else if (currentUser.role == 'Inspector') {
+      _towns = (currentUser.town as List? ?? [])
+          .whereType<Map>()
+          .map((town) => Map<String, dynamic>.from(town))
+          .toList();
+    } else {
+      _towns = [];
+    }
+    notifyListeners();
   }
 
   void fetchHouses(String townID) async {
@@ -61,29 +73,21 @@ class OwnerDetailProvider extends ChangeNotifier {
 
   void setIsPasswordVisible(bool value) {
     _isPasswordVisible = value;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      notifyListeners();
-    });
+    notifyListeners();
   }
 
   void setIsConfirmPasswordVisible(bool value) {
     _isConfirmPasswordVisible = value;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      notifyListeners();
-    });
+    notifyListeners();
   }
 
   void setProfileImage(File? value) {
     _profileImage = value;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      notifyListeners();
-    });
+    notifyListeners();
   }
 
   void setUpdateHover(bool value) {
     _updateHover = value;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      notifyListeners();
-    });
+    notifyListeners();
   }
 }
