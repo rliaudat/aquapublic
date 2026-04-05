@@ -262,7 +262,7 @@ class _UserWebDashboardPageState extends State<UserWebDashboardPage> {
                 "Billing Status": "closed",
                 "Measurement Status":
                     checkReading(houseData) ? "completed" : "pending",
-                "View Image": houseData['lastReading']?['consumptionDays'],
+                "View Image": houseData['lastReading']?['meterImageURL'],
               });
             } else {
               tempTableData.add({
@@ -723,11 +723,22 @@ class _UserWebDashboardPageState extends State<UserWebDashboardPage> {
                                                         : IconButton(
                                                             onPressed:
                                                                 () async {
-                                                              !await launchUrl(
-                                                                Uri.parse(
+                                                              final imageUrl =
                                                                   entry.value
-                                                                      .toString(),
-                                                                ),
+                                                                      .toString();
+                                                              final uri =
+                                                                  Uri.tryParse(
+                                                                imageUrl,
+                                                              );
+                                                              if (uri == null ||
+                                                                  !(uri.isScheme(
+                                                                          'http') ||
+                                                                      uri.isScheme(
+                                                                          'https'))) {
+                                                                return;
+                                                              }
+                                                              await launchUrl(
+                                                                uri,
                                                               );
                                                             },
                                                             icon: const Icon(
