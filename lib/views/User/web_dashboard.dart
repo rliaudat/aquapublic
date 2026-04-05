@@ -1,8 +1,12 @@
+import 'dart:async';
+
 import 'package:agua_med/Components/Drawer.dart';
+import 'package:agua_med/providers/user_provider.dart';
 import 'package:agua_med/theme.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:responsive_framework/responsive_framework.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -14,6 +18,7 @@ class UserWebDashboardPage extends StatefulWidget {
 }
 
 class _UserWebDashboardPageState extends State<UserWebDashboardPage> {
+  StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _townSubscription;
   List<Map<String, dynamic>> towns = [];
   List<String> months = [
     "January",
@@ -94,21 +99,69 @@ class _UserWebDashboardPageState extends State<UserWebDashboardPage> {
     loadTowns();
   }
 
+  @override
+  void dispose() {
+    _townSubscription?.cancel();
+    super.dispose();
+  }
+
+  List<Map<String, dynamic>> _normalizeAccessibleTowns(dynamic rawTowns) {
+    if (rawTowns is Map) {
+      return [Map<String, dynamic>.from(rawTowns)];
+    }
+    if (rawTowns is List) {
+      return rawTowns
+          .whereType<Map>()
+          .map((town) => Map<String, dynamic>.from(town))
+          .toList();
+    }
+    return [];
+  }
+
   loadTowns() {
     isLoading = true;
     if (mounted) setState(() {});
-    firestore.collection('town').snapshots().listen((querySnapshot) async {
-      final townData = await Future.wait(querySnapshot.docs.map((doc) async {
-        final data = {'id': doc.id, 'name': doc['name']};
-        return data;
-      }).toList());
-      towns = townData;
-      selectedTown = towns.first;
+    final user = context.read<UserProvider>().user;
+    if (user == null) {
+      isLoading = false;
       if (mounted) setState(() {});
-      loadData();
-    }).onError((e) {
-      debugPrint('Error loading data: $e');
-    });
+      return;
+    }
+
+    if (user.role == 'Manager' ||
+        user.role == 'HouseOwner' ||
+        user.role == 'Inspector') {
+      towns = _normalizeAccessibleTowns(user.town);
+      selectedTown = towns.isNotEmpty ? towns.first : null;
+      isLoading = false;
+      if (mounted) setState(() {});
+      if (selectedTown != null) {
+        loadData();
+      }
+      return;
+    }
+
+    _townSubscription?.cancel();
+    _townSubscription = firestore.collection('town').snapshots().listen(
+      (querySnapshot) async {
+        final townData = await Future.wait(querySnapshot.docs.map((doc) async {
+          final data = {'id': doc.id, 'name': doc['name']};
+          return data;
+        }).toList());
+        towns = townData;
+        selectedTown = towns.isNotEmpty ? towns.first : null;
+        isLoading = false;
+        if (mounted) setState(() {});
+        if (selectedTown != null) {
+          loadData();
+        }
+      },
+      onError: (e) {
+        isLoading = false;
+        if (mounted) setState(() {});
+        debugPrint('Error loading data: $e');
+      },
+    );
   }
 
   bool checkReading(item) {
