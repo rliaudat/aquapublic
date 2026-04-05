@@ -16,6 +16,7 @@ build/
 __MACOSX/
 android/.gradle/
 android/.kotlin/
+android/app/.cxx/
 ios/.symlinks/
 ios/Pods/
 ios/build/
