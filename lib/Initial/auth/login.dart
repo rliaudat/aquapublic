@@ -157,9 +157,7 @@ class _LoginScreenState extends State<LoginScreen> {
       Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(
-              builder: (context) => isDesktop
-                  ? const UserWebDashboardPage()
-                  : const ManagerHomeScreen()),
+              builder: (context) => const ManagerHomeScreen()),
           (route) => false);
     } else if (user.role == 'Inspector') {
       Navigator.pushAndRemoveUntil(
