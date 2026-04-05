@@ -79,38 +79,6 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
     );
   }
 
-  bool _matchesTown(dynamic userTown, dynamic accessibleTowns) {
-    final scopedTownIds = _extractTownIds(accessibleTowns);
-    if (scopedTownIds.isEmpty) return false;
-
-    if (userTown is Map) {
-      return scopedTownIds.contains(userTown['id']);
-    }
-
-    if (userTown is List) {
-      return userTown.any(
-        (town) => town is Map && scopedTownIds.contains(town['id']),
-      );
-    }
-
-    return false;
-  }
-
-  Set<String> _extractTownIds(dynamic rawTown) {
-    if (rawTown is Map && rawTown['id'] != null) {
-      return {rawTown['id'].toString()};
-    }
-    if (rawTown is List) {
-      return rawTown
-          .whereType<Map>()
-          .map((town) => town['id'])
-          .whereType<Object>()
-          .map((id) => id.toString())
-          .toSet();
-    }
-    return <String>{};
-  }
-
   @override
   Widget build(BuildContext context) {
     bool isTablet = ResponsiveBreakpoints.of(context).largerThan(TABLET);
@@ -432,24 +400,8 @@ class _UserRegistrationScreenState extends State<UserRegistrationScreen> {
                                                     child:
                                                         CircularProgressIndicator());
                                               } else {
-                                                final currentUser =
-                                                    context.read<UserProvider>().user;
-                                                final accessibleTowns =
-                                                    currentUser?.town;
-                                                final allPendingUsers =
-                                                    List<AppUser>.from(
-                                                        snapshot.data! as List);
                                                 final pendingUsers =
-                                                    currentUser != null &&
-                                                            currentUser.role !=
-                                                                'Admin'
-                                                        ? allPendingUsers
-                                                            .where((user) =>
-                                                                _matchesTown(
-                                                                    user.town,
-                                                                    accessibleTowns))
-                                                            .toList()
-                                                        : allPendingUsers;
+                                                    snapshot.data! as List;
                                                 if (pendingUsers.isEmpty) {
                                                   return Column(
                                                     mainAxisAlignment:
