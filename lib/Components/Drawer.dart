@@ -103,9 +103,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
                   Navigator.push(
                       context,
                       MaterialPageRoute(
-                          builder: (context) => isDesktop
-                              ? const UserWebDashboardPage()
-                              : const ManagerHomeScreen())).then((value) {
+                          builder: (context) => const ManagerHomeScreen())).then((value) {
                     if (mounted) setState(() => selectedTile = 0);
                   });
                 } else if (user.role == 'Inspector') {

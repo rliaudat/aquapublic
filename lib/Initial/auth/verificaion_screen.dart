@@ -81,9 +81,7 @@ class _VerificationCodeScreenState extends State<VerificationCodeScreen> {
       Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(
-              builder: (context) => isDesktop
-                  ? const UserWebDashboardPage()
-                  : const ManagerHomeScreen()),
+              builder: (context) => const ManagerHomeScreen()),
           (route) => false);
     } else if (user.role == 'Inspector') {
       Navigator.pushAndRemoveUntil(

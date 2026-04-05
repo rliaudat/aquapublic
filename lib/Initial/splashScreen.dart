@@ -57,9 +57,7 @@ class _SplashScreenState extends State<SplashScreen> {
             Navigator.pushAndRemoveUntil(
                 context,
                 MaterialPageRoute(
-                    builder: (context) => isDesktop
-                        ? const UserWebDashboardPage()
-                        : const ManagerHomeScreen()),
+                    builder: (context) => const ManagerHomeScreen()),
                 (route) => false);
           } else if (state.user.role == 'Inspector') {
             Navigator.pushAndRemoveUntil(
