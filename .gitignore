@@ -14,6 +14,19 @@ build/
 **/ephemeral/
 **/.plugin_symlinks/
 __MACOSX/
+android/.gradle/
+android/.kotlin/
+ios/.symlinks/
+ios/Pods/
+ios/build/
+ios/Flutter/Generated.xcconfig
+ios/Flutter/flutter_export_environment.sh
+ios/Flutter/ephemeral/
+linux/flutter/generated_plugin_registrant.*
+linux/flutter/generated_plugins.cmake
+macos/Flutter/ephemeral/
+windows/flutter/generated_plugin_registrant.*
+windows/flutter/generated_plugins.cmake
 
 # IDE
 .idea/
