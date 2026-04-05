@@ -296,6 +296,8 @@
         "inspectors": "Inspectors",
         "userRegistrations": "User Registrations",
         "houses": "Houses",
+        "invoices": "Readings",
+        "editProfile": "Edit Profile",
         "logout": "Logout"
     },
     "InspectorHomeScreen": {

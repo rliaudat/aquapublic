@@ -5,7 +5,9 @@ import 'package:agua_med/loading.dart';
 import 'package:agua_med/providers/user_provider.dart';
 import 'package:agua_med/theme.dart';
 import 'package:agua_med/Components/Reuseable.dart';
+import 'package:agua_med/edit_profile.dart';
 import 'package:agua_med/views/Admin/house.dart';
+import 'package:agua_med/views/Admin/invoices.dart';
 import 'package:agua_med/views/Admin/user_registration.dart';
 import 'package:agua_med/views/Admin/users/all_users.dart';
 import 'package:flutter/material.dart';
@@ -150,6 +152,49 @@ class _ManagerHomeScreenState extends State<ManagerHomeScreen> {
                                               .user
                                               ?.town['id'],
                                         ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: p),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Expanded(
+                                child: MouseRegion(
+                                  cursor: SystemMouseCursors.click,
+                                  child: AdminMenu(
+                                    icon: Icons.receipt_long,
+                                    text: 'ManagerHomeScreen.invoices'.tr(),
+                                    height: 8,
+                                    size: 50,
+                                    onTap: () => Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            const InvoiceScreen(),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: MouseRegion(
+                                  cursor: SystemMouseCursors.click,
+                                  child: AdminMenu(
+                                    icon: Icons.edit,
+                                    text: 'ManagerHomeScreen.editProfile'.tr(),
+                                    height: 8,
+                                    size: 50,
+                                    onTap: () => Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            const EditProfileScreen(),
                                       ),
                                     ),
                                   ),
