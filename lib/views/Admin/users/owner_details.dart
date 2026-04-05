@@ -4,12 +4,12 @@ import 'package:agua_med/Components/Drawer.dart';
 import 'package:agua_med/Components/Reuseable.dart';
 import 'package:agua_med/_services/user_services.dart';
 import 'package:agua_med/providers/owner_detail_provider.dart';
+import 'package:agua_med/providers/user_provider.dart';
 import 'package:agua_med/theme.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dropdown_search/dropdown_search.dart';
 import 'package:email_validator/email_validator.dart';
 import 'package:ephone_field/ephone_field.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl_phone_number_input/intl_phone_number_input.dart';
@@ -115,7 +115,9 @@ class _OwnerDetailsScreenState extends State<OwnerDetailsScreen> {
 
   @override
   void initState() {
-    context.read<OwnerDetailProvider>().fetchTowns();
+    context.read<OwnerDetailProvider>().fetchTowns(
+          context.read<UserProvider>().user!,
+        );
     firstName.text = widget.data.firstName;
     lastName.text = widget.data.lastName;
     email.text = widget.data.email;
