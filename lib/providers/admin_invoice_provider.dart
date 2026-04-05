@@ -9,11 +9,15 @@ class AdminInvoiceProvider extends ChangeNotifier {
 
   void setIsLoading(bool value) {
     _isLoading = value;
-    notifyListeners();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
   }
 
   void setSearchHover(bool value) {
     _searchHover = value;
-    notifyListeners();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
   }
 }

@@ -7,6 +7,8 @@ class LoginProvider extends ChangeNotifier {
 
   void setIsPasswordVisible(bool value) {
     _isPasswordVisible = value;
-    notifyListeners();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
   }
 }

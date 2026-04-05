@@ -1,6 +1,4 @@
 import 'dart:io';
-
-import 'package:agua_med/Components/Drawer.dart';
 import 'package:agua_med/Components/Reuseable.dart';
 import 'package:agua_med/_helpers/encrypption.dart';
 import 'package:agua_med/bloc/authentication/authentication_bloc.dart';
@@ -159,21 +157,17 @@ class _CreateOwnerScreenState extends State<CreateOwnerScreen> {
             Consumer<CreateOwnerProvider>(builder: (context, provider, child) {
           return Scaffold(
             appBar: isTablet
-                ? null
+                ? CustomAppBar(title: 'Create ${widget.header}')
                 : CustomAppBar(title: 'Create ${widget.header}'),
             body: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                isTablet ? const CustomDrawer() : Container(),
                 Expanded(
                   child: SingleChildScrollView(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.start,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        isTablet
-                            ? CustomAppBar(title: 'Create ${widget.header}')
-                            : Container(),
                         SizedBox(height: isTablet ? 20 : 0),
                         Padding(
                           padding: EdgeInsets.symmetric(horizontal: p),

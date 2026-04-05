@@ -1,10 +1,7 @@
 import 'dart:io';
-
-import 'package:agua_med/Components/Drawer.dart';
 import 'package:agua_med/Components/Reuseable.dart';
 import 'package:agua_med/_services/user_services.dart';
 import 'package:agua_med/providers/owner_detail_provider.dart';
-import 'package:agua_med/providers/user_provider.dart';
 import 'package:agua_med/theme.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:dropdown_search/dropdown_search.dart';
@@ -107,7 +104,7 @@ class _OwnerDetailsScreenState extends State<OwnerDetailsScreen> {
         );
         pop(context);
       } else {
-        // ignore: use_build_context_synchronously
+        // ignore: use_build_context_synchronously, no_wildcard_variable_uses
         showToast(context, msg: _);
       }
     });
@@ -115,9 +112,7 @@ class _OwnerDetailsScreenState extends State<OwnerDetailsScreen> {
 
   @override
   void initState() {
-    context.read<OwnerDetailProvider>().fetchTowns(
-          context.read<UserProvider>().user!,
-        );
+    context.read<OwnerDetailProvider>().fetchTowns();
     firstName.text = widget.data.firstName;
     lastName.text = widget.data.lastName;
     email.text = widget.data.email;
@@ -140,20 +135,17 @@ class _OwnerDetailsScreenState extends State<OwnerDetailsScreen> {
       return GestureDetector(
         onTap: () => unFocus(context),
         child: Scaffold(
-          appBar:
-              isTablet ? null : CustomAppBar(title: '${widget.header} Details'),
+          appBar: isTablet
+              ? CustomAppBar(title: '${widget.header} Details')
+              : CustomAppBar(title: '${widget.header} Details'),
           body: Row(
             children: [
-              isTablet ? const CustomDrawer() : Container(),
               Flexible(
                 child: SingleChildScrollView(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.start,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      isTablet
-                          ? CustomAppBar(title: '${widget.header} Details')
-                          : Container(),
                       const SizedBox(height: 20),
                       Padding(
                         padding: EdgeInsets.symmetric(horizontal: p),
@@ -452,7 +444,7 @@ class _OwnerDetailsScreenState extends State<OwnerDetailsScreen> {
                                           itemAsString: (item) =>
                                               item['name'].toString(),
                                           onChanged: (value) {
-                                            provider.selectedHouse(value);
+                                            provider.setHouse(value);
                                           },
                                           compareFn: (item, _) =>
                                               // ignore: no_wildcard_variable_uses

@@ -34,32 +34,44 @@ class SignUpProvider extends ChangeNotifier {
 
   void fetchHouses(String townID) async {
     _houses = await HouseServices.fetchAllByTown(townID);
-    notifyListeners();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
   }
 
   void setTown(dynamic value) {
     _selectedTown = value;
-    notifyListeners();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
   }
 
   void setHouse(dynamic value) {
     _selectedHouse = value;
-    notifyListeners();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
   }
 
   void setIsPasswordVisible(bool value) {
     _isPasswordVisible = value;
-    notifyListeners();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
   }
 
   void setIsConfirmPasswordVisible(bool value) {
     _isConfirmPasswordVisible = value;
-    notifyListeners();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
   }
 
   void setProfileImage(File? value) {
     _profileImage = value;
-    notifyListeners();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
   }
 
   void reset() {

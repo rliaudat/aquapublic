@@ -26,6 +26,8 @@ class AdminHomeProvider extends ChangeNotifier {
     _managerCount = (result[2]).length.toString();
     _inspectorCount = (result[3]).length.toString();
 
-    notifyListeners();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
   }
 }

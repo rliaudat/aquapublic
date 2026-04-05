@@ -1,4 +1,3 @@
-import 'package:agua_med/Components/Drawer.dart';
 import 'package:agua_med/Components/Reuseable.dart';
 import 'package:agua_med/_helpers/helper.dart';
 import 'package:agua_med/loading.dart';
@@ -84,7 +83,12 @@ class _MeterReadingScreenState extends State<MeterReadingScreen> {
         onTap: () => unFocus(context),
         child: Scaffold(
           appBar: isTablet
-              ? null
+              ? AppBar(
+                  centerTitle: true,
+                  // automaticallyImplyLeading: false,
+                  title: Text('MeterReadingScreen.meterReading'.tr()),
+                  backgroundColor: primaryColor,
+                )
               : CustomAppBar(
                   title: 'MeterReadingScreen.meterReading'.tr(),
                   showButton: true),
@@ -93,22 +97,12 @@ class _MeterReadingScreenState extends State<MeterReadingScreen> {
               return Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  isTablet ? const CustomDrawer() : Container(),
                   Expanded(
                     child: SingleChildScrollView(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.start,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          isTablet
-                              ? AppBar(
-                                  centerTitle: true,
-                                  automaticallyImplyLeading: false,
-                                  title: Text(
-                                      'MeterReadingScreen.meterReading'.tr()),
-                                  backgroundColor: primaryColor,
-                                )
-                              : Container(),
                           const SizedBox(height: 10),
                           Padding(
                             padding: EdgeInsets.symmetric(horizontal: p),

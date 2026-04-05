@@ -3,8 +3,6 @@ import 'package:agua_med/providers/house_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:responsive_framework/responsive_framework.dart';
-
-import '../../Components/Drawer.dart';
 import '../../Components/Reuseable.dart';
 import '../../Components/bottomSheets/add_update_houses.dart';
 import '../../loading.dart';
@@ -21,7 +19,10 @@ class HousesScreen extends StatelessWidget {
     return GestureDetector(
       onTap: () => unFocus(context),
       child: Scaffold(
-        appBar: isTablet ? null : CustomAppBar(title: '$town Houses'),
+        appBar: isTablet
+            ? CustomAppBar(
+                title: '$town Houses', showButton: true, showAction: false)
+            : CustomAppBar(title: '$town Houses'),
         floatingActionButton: isTablet
             ? null
             : FloatingActionButton(
@@ -40,16 +41,10 @@ class HousesScreen extends StatelessWidget {
           return Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (isTablet) const CustomDrawer(),
               Expanded(
                 child: SingleChildScrollView(
                   child: Column(
                     children: [
-                      if (isTablet)
-                        CustomAppBar(
-                            title: '$town Houses',
-                            showButton: false,
-                            showAction: false),
                       Padding(
                         padding: EdgeInsets.symmetric(horizontal: p),
                         child: Column(
@@ -144,7 +139,7 @@ class HousesScreen extends StatelessWidget {
                                             ),
                                           ),
                                           SizedBox(
-                                              width: width(context) * 0.01),
+                                              width: width(context) * 0.005),
                                           MouseRegion(
                                             cursor: SystemMouseCursors.click,
                                             onEnter: (_) => provider
@@ -172,6 +167,54 @@ class HousesScreen extends StatelessWidget {
                                                     ),
                                                   );
                                                 }),
+                                          ),
+                                          SizedBox(
+                                              width: width(context) * 0.005),
+                                          MouseRegion(
+                                            cursor: SystemMouseCursors.click,
+                                            onEnter: (_) => provider
+                                                .setSearchButtonHover(true),
+                                            onExit: (_) => provider
+                                                .setSearchButtonHover(false),
+                                            child: Button(
+                                              color: provider.searchButtonHover
+                                                  ? primaryColor
+                                                  : secondaryColor,
+                                              borderRadius: radius,
+                                              height: 45,
+                                              fontSize: width(context) * 0.0115,
+                                              width: width(context) / 9,
+                                              text: 'Import',
+                                              onPressed: () {
+                                                provider.importHousesFromCsv(
+                                                  context,
+                                                  townID,
+                                                );
+                                              },
+                                            ),
+                                          ),
+                                          SizedBox(
+                                              width: width(context) * 0.005),
+                                          MouseRegion(
+                                            cursor: SystemMouseCursors.click,
+                                            onEnter: (_) => provider
+                                                .setExportButtonHover(true),
+                                            onExit: (_) => provider
+                                                .setExportButtonHover(false),
+                                            child: Button(
+                                              color: provider.exportButtonHover
+                                                  ? primaryColor
+                                                  : secondaryColor,
+                                              borderRadius: radius,
+                                              height: 45,
+                                              fontSize: width(context) * 0.0115,
+                                              width: width(context) / 9,
+                                              text: 'Export',
+                                              onPressed: () {
+                                                provider.exportHousesToExcel(
+                                                    context, townID);
+                                              },
+                                            ),
                                           ),
                                         ],
                                       ),
@@ -264,69 +307,91 @@ class HousesScreen extends StatelessWidget {
                                         snapshot.data?.length ?? 0,
                                         (index) {
                                           final house = snapshot.data![index];
-                                          return Container(
-                                            margin: const EdgeInsets.only(
-                                                bottom: 8),
-                                            padding: const EdgeInsets.symmetric(
-                                                horizontal: 16),
-                                            height: 50,
-                                            decoration: BoxDecoration(
-                                              color: greyColor,
-                                              borderRadius:
-                                                  BorderRadius.circular(10),
-                                            ),
-                                            child: Row(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment
-                                                      .spaceBetween,
-                                              children: [
-                                                Text(
-                                                  house.name,
-                                                  style: const TextStyle(
-                                                      fontWeight:
-                                                          FontWeight.bold),
-                                                ),
-                                                PopupMenuButton(
-                                                  onSelected: (value) {
-                                                    if (value == 'Edit') {
-                                                      showModalBottomSheet(
-                                                        context: context,
-                                                        isScrollControlled:
-                                                            true,
-                                                        builder: (context) =>
-                                                            AddUpdateHouses(
-                                                          houseId: house.id,
-                                                          houseName: house.name,
-                                                          townId: townID,
-                                                          townName: town,
-                                                        ),
-                                                      );
-                                                    } else if (value ==
-                                                        'Delete') {
-                                                      HouseServices.update(
-                                                        house.id,
-                                                        {'isDelete': true},
-                                                      );
-                                                      showToast(context,
-                                                          msg:
-                                                              'House has been deleted');
-                                                    }
-                                                  },
-                                                  itemBuilder: (context) =>
-                                                      const [
-                                                    PopupMenuItem(
-                                                        value: 'Edit',
-                                                        child: Text('Edit')),
-                                                    PopupMenuItem(
-                                                        value: 'Delete',
-                                                        child: Text('Delete')),
-                                                  ],
-                                                  icon: const Icon(
-                                                      Icons.more_vert),
-                                                ),
-                                              ],
-                                            ),
-                                          );
+                                          return house.name
+                                                  .toLowerCase()
+                                                  .contains(provider.query
+                                                          ?.toLowerCase() ??
+                                                      '')
+                                              ? Container(
+                                                  margin: const EdgeInsets.only(
+                                                      bottom: 8),
+                                                  padding: const EdgeInsets
+                                                      .symmetric(
+                                                      horizontal: 16),
+                                                  height: 50,
+                                                  decoration: BoxDecoration(
+                                                    color: greyColor,
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            10),
+                                                  ),
+                                                  child: Row(
+                                                    mainAxisAlignment:
+                                                        MainAxisAlignment
+                                                            .spaceBetween,
+                                                    children: [
+                                                      Text(
+                                                        house.name,
+                                                        style: const TextStyle(
+                                                            fontWeight:
+                                                                FontWeight
+                                                                    .bold),
+                                                      ),
+                                                      PopupMenuButton(
+                                                        onSelected: (value) {
+                                                          if (value == 'Edit') {
+                                                            showModalBottomSheet(
+                                                              context: context,
+                                                              isScrollControlled:
+                                                                  true,
+                                                              builder: (context) =>
+                                                                  AddUpdateHouses(
+                                                                houseId:
+                                                                    house.id,
+                                                                houseName:
+                                                                    house.name,
+                                                                cohabitants: house
+                                                                    .cohabitants,
+                                                                meterNumber: house
+                                                                    .meterNumber,
+                                                                houseType: house
+                                                                    .houseType,
+                                                                townId: townID,
+                                                                townName: town,
+                                                              ),
+                                                            );
+                                                          } else if (value ==
+                                                              'Delete') {
+                                                            HouseServices
+                                                                .update(
+                                                              house.id,
+                                                              {
+                                                                'isDelete': true
+                                                              },
+                                                            );
+                                                            showToast(context,
+                                                                msg:
+                                                                    'House has been deleted');
+                                                          }
+                                                        },
+                                                        itemBuilder:
+                                                            (context) => const [
+                                                          PopupMenuItem(
+                                                              value: 'Edit',
+                                                              child:
+                                                                  Text('Edit')),
+                                                          PopupMenuItem(
+                                                              value: 'Delete',
+                                                              child: Text(
+                                                                  'Delete')),
+                                                        ],
+                                                        icon: const Icon(
+                                                            Icons.more_vert),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                )
+                                              : const SizedBox();
                                         },
                                       ),
                                     );

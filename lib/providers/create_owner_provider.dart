@@ -47,7 +47,9 @@ class CreateOwnerProvider extends ChangeNotifier {
         fetchHouses(_selectedTown['id']);
       }
     }
-    notifyListeners();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
   }
 
   void fetchHouses(String townID) async {
@@ -55,36 +57,50 @@ class CreateOwnerProvider extends ChangeNotifier {
     _houses = listedHouses.map((data) {
       return {'id': data.id, 'name': data.name};
     }).toList();
-    notifyListeners();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
   }
 
   void setTown(dynamic value) {
     _selectedTown = value;
-    notifyListeners();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
   }
 
   void setHouse(dynamic value) {
     _selectedHouse = value;
-    notifyListeners();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
   }
 
   void setIsPasswordVisible(bool value) {
     _isPasswordVisible = value;
-    notifyListeners();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
   }
 
   void setIsConfirmPasswordVisible(bool value) {
     _isConfirmPasswordVisible = value;
-    notifyListeners();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
   }
 
   void setProfileImage(File? value) {
     _profileImage = value;
-    notifyListeners();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
   }
 
   void setUpdateHover(bool value) {
     _updateHover = value;
-    notifyListeners();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
   }
 }

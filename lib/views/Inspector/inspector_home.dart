@@ -48,7 +48,9 @@ class _InspectorHomeScreenState extends State<InspectorHomeScreen> {
       DateTime now = DateTime.now();
       bool isInCurrentMonth = lastReadingDate.year == now.year &&
           lastReadingDate.month == now.month;
-      return isInCurrentMonth;
+      return isInCurrentMonth
+          ? lastReading['measurementStatus'] == 'completed'
+          : false;
     }
 
     return false;
@@ -90,7 +92,22 @@ class _InspectorHomeScreenState extends State<InspectorHomeScreen> {
           builder: (context, provider, child) {
             return Scaffold(
               appBar: isTablet
-                  ? null
+                  ? AppBar(
+                      centerTitle: true,
+                      // automaticallyImplyLeading: false,
+                      title: Text(selectedTown['name']),
+                      backgroundColor: primaryColor,
+                      actions: [
+                        IconButton(
+                          icon:
+                              Icon(Icons.home_work_rounded, color: whiteColor),
+                          onPressed: () {
+                            unFocus(context);
+                            showTownBottomSheet();
+                          },
+                        ),
+                      ],
+                    )
                   : AppBar(
                       backgroundColor: primaryColor,
                       title: Text(selectedTown['name']),
@@ -105,40 +122,22 @@ class _InspectorHomeScreenState extends State<InspectorHomeScreen> {
                         ),
                       ],
                     ),
-              drawer: isTablet ? null : const CustomDrawer(),
+              drawer: const CustomDrawer(),
               body: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  isTablet ? const CustomDrawer() : Container(),
                   Flexible(
                     child: SingleChildScrollView(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.start,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          isTablet
-                              ? AppBar(
-                                  centerTitle: true,
-                                  automaticallyImplyLeading: false,
-                                  title: Text(selectedTown['name']),
-                                  backgroundColor: primaryColor,
-                                  actions: [
-                                    IconButton(
-                                      icon: Icon(Icons.home_work_rounded,
-                                          color: whiteColor),
-                                      onPressed: () {
-                                        unFocus(context);
-                                        showTownBottomSheet();
-                                      },
-                                    ),
-                                  ],
-                                )
-                              : Container(),
                           StreamBuilder(
                             stream: HouseServices.houseReadingStream(
                               provider.selectedTown['id'],
                             ),
                             builder: (context, snapshot) {
+                              // print(snapshot.data);
                               List<dynamic> visibleItems =
                                   snapshot.data?.where((item) {
                                         bool hasReadings = checkReading(item);

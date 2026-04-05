@@ -11,8 +11,17 @@ class AddUpdateTown extends StatefulWidget {
   final String? townId;
   final String? townName;
   final String? townUnitPrice;
+  final String? chargedByConsumption;
+  final String? chargedByHouses;
+  final String? fixedCharges;
   const AddUpdateTown(
-      {super.key, this.townId, this.townName, this.townUnitPrice});
+      {super.key,
+      this.townId,
+      this.townName,
+      this.townUnitPrice,
+      this.chargedByConsumption,
+      this.chargedByHouses,
+      this.fixedCharges});
 
   @override
   State<AddUpdateTown> createState() => _AddUpdateTownState();
@@ -46,8 +55,8 @@ class _AddUpdateTownState extends State<AddUpdateTown> {
             'updatedAt': FieldValue.serverTimestamp(),
           },
         );
-        pop(context);
         townController.clear();
+        pop(context);
         showToast(context,
             msg: 'AddUpdateTown.townUpdatedSuccessfully'.tr(), duration: 3);
       } else {
@@ -62,8 +71,8 @@ class _AddUpdateTownState extends State<AddUpdateTown> {
             updatedAt: Timestamp.now(),
           ),
         );
-        pop(context);
         townController.clear();
+        pop(context);
         showToast(context,
             msg: 'AddUpdateTown.townAddedSuccessfully'.tr(), duration: 3);
       }

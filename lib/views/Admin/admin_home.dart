@@ -144,7 +144,10 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                                         image: 'assets/images/town.png',
                                         total: provider.townCount,
                                         onTap: () {
-                                          Navigator.push(
+                                          if (mounted) {
+                                            setState(() => selectedTile = 4);
+                                          }
+                                          Navigator.pushReplacement(
                                             context,
                                             MaterialPageRoute(
                                               builder: (context) =>
@@ -159,7 +162,10 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                                         image: 'assets/images/allUsers.png',
                                         total: provider.houseOwnerCount,
                                         onTap: () {
-                                          Navigator.push(
+                                          if (mounted) {
+                                            setState(() => selectedTile = 1);
+                                          }
+                                          Navigator.pushReplacement(
                                             context,
                                             MaterialPageRoute(
                                               builder: (context) =>
@@ -176,7 +182,10 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                                         total: provider.inspectorCount,
                                         size: 24,
                                         onTap: () {
-                                          Navigator.push(
+                                          if (mounted) {
+                                            setState(() => selectedTile = 2);
+                                          }
+                                          Navigator.pushReplacement(
                                             context,
                                             MaterialPageRoute(
                                               builder: (context) =>
@@ -193,7 +202,10 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                                         image: 'assets/images/management.png',
                                         total: provider.managerCount,
                                         onTap: () {
-                                          Navigator.push(
+                                          if (mounted) {
+                                            setState(() => selectedTile = 5);
+                                          }
+                                          Navigator.pushReplacement(
                                               context,
                                               MaterialPageRoute(
                                                   builder: (context) =>
