@@ -56,22 +56,12 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
       if (towns.isNotEmpty) {
         _selectedTown = towns.first;
         loadData();
-      } else {
-        allData = [];
-        filteredData = [];
-        totalPages = 0;
-        context.read<AdminInvoiceProvider>().setIsLoading(false);
       }
     } else if (context.read<UserProvider>().user!.role == 'Inspector') {
       towns.addAll(context.read<UserProvider>().user!.town);
       if (towns.isNotEmpty) {
         _selectedTown = towns.first;
         loadData();
-      } else {
-        allData = [];
-        filteredData = [];
-        totalPages = 0;
-        context.read<AdminInvoiceProvider>().setIsLoading(false);
       }
     }
   }
@@ -114,13 +104,6 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
   void initState() {
     loadTowns();
     super.initState();
-  }
-
-  @override
-  void dispose() {
-    _readingsSubscription?.cancel();
-    searchController.dispose();
-    super.dispose();
   }
 
   showDeleteConfirmation(Map<String, dynamic> item) {
@@ -772,12 +755,10 @@ class _InvoiceScreenState extends State<InvoiceScreen> {
     List<DataRow> rows = [];
     for (int i = start; i < end && i < filteredData.length; i++) {
       var item = filteredData[i];
-      final houseData = item['houseData'] as Map<String, dynamic>?;
-      final houseName = (houseData?['name'] ?? 'Unknown').toString();
       rows.add(
         DataRow(
           cells: [
-            DataCell(Text(houseName)),
+            DataCell(Text(item['houseData']['name'].toString())),
             DataCell(Text(item['previousReading'].toString())),
             DataCell(Text(item['reading'].toString())),
             DataCell(Text(item['units'].toString())),

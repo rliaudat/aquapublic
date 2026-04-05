@@ -89,7 +89,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
               text: 'CustomDrawer.dashboard'.tr(),
               onTap: () {
                 if (mounted) setState(() => selectedTile = 0);
-                if (!isTablet) pop(context);
+                pop(context);
 
                 if (user.role == 'Admin') {
                   Navigator.push(

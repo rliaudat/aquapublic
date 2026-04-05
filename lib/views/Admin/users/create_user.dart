@@ -1,4 +1,6 @@
 import 'dart:io';
+
+import 'package:agua_med/Components/Drawer.dart';
 import 'package:agua_med/Components/Reuseable.dart';
 import 'package:agua_med/_helpers/encrypption.dart';
 import 'package:agua_med/bloc/authentication/authentication_bloc.dart';
@@ -85,13 +87,6 @@ class _CreateOwnerScreenState extends State<CreateOwnerScreen> {
     if (password.text != confirmPassword.text) {
       showToast(context, msg: 'CreateOwnerScreen.passwordsDoNotMatch'.tr());
       return;
-    }
-    if (widget.role == 'Inspector') {
-      final selectedTowns = context.read<CreateOwnerProvider>().selectedTown;
-      if (selectedTowns == null || (selectedTowns is List && selectedTowns.isEmpty)) {
-        showToast(context, msg: 'CreateOwnerScreen.townRequired'.tr());
-        return;
-      }
     }
     doCreate();
   }
