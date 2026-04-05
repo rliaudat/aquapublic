@@ -2,7 +2,9 @@ import 'package:agua_med/Components/Drawer.dart';
 import 'package:agua_med/Components/Reuseable.dart';
 import 'package:agua_med/_services/admin_Services.dart';
 import 'package:agua_med/_services/user_services.dart';
+import 'package:agua_med/models/user.dart';
 import 'package:agua_med/providers/all_user_provider.dart';
+import 'package:agua_med/providers/user_provider.dart';
 import 'package:agua_med/theme.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
@@ -101,6 +103,38 @@ class _AllUsersScreenState extends State<AllUsersScreen> {
     );
   }
 
+  bool _matchesTown(dynamic userTown, dynamic accessibleTowns) {
+    final scopedTownIds = _extractTownIds(accessibleTowns);
+    if (scopedTownIds.isEmpty) return false;
+
+    if (userTown is Map) {
+      return scopedTownIds.contains(userTown['id']);
+    }
+
+    if (userTown is List) {
+      return userTown.any(
+        (town) => town is Map && scopedTownIds.contains(town['id']),
+      );
+    }
+
+    return false;
+  }
+
+  Set<String> _extractTownIds(dynamic rawTown) {
+    if (rawTown is Map && rawTown['id'] != null) {
+      return {rawTown['id'].toString()};
+    }
+    if (rawTown is List) {
+      return rawTown
+          .whereType<Map>()
+          .map((town) => town['id'])
+          .whereType<Object>()
+          .map((id) => id.toString())
+          .toSet();
+    }
+    return <String>{};
+  }
+
   @override
   Widget build(BuildContext context) {
     bool isTablet = ResponsiveBreakpoints.of(context).largerThan(TABLET);
@@ -142,8 +176,19 @@ class _AllUsersScreenState extends State<AllUsersScreen> {
                     ],
                   );
                 }
-                final users = snapshot.data!;
-                if (users.isEmpty) {
+                final currentUser = context.read<UserProvider>().user;
+                final accessibleTowns = currentUser?.town;
+                final users = List<AppUser>.from(snapshot.data! as List);
+                final scopedUsers = currentUser != null &&
+                        currentUser.role != 'Admin'
+                    ? users
+                        .where(
+                          (user) => _matchesTown(user.town, accessibleTowns),
+                        )
+                        .toList()
+                    : users;
+
+                if (scopedUsers.isEmpty) {
                   return Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -283,7 +328,7 @@ class _AllUsersScreenState extends State<AllUsersScreen> {
 
                 dynamic filteredOwners;
                 if (provider.searchQuery.isEmpty) {
-                  filteredOwners = users;
+                  filteredOwners = scopedUsers;
                 } else {
                   if (widget.role == 'HouseOwner') {
                     final searchFields = [
@@ -293,7 +338,7 @@ class _AllUsersScreenState extends State<AllUsersScreen> {
                       'house.name',
                       'town.name'
                     ];
-                    filteredOwners = users.where((doc) {
+                    filteredOwners = scopedUsers.where((doc) {
                       final docData = doc.toMap();
                       return searchFields.any((field) {
                         var temp = field.split('.');
@@ -321,7 +366,7 @@ class _AllUsersScreenState extends State<AllUsersScreen> {
                       'town.name'
                     ];
 
-                    filteredOwners = users.where((doc) {
+                    filteredOwners = scopedUsers.where((doc) {
                       final docData = doc.toMap();
                       return searchFields.any((field) {
                         var temp = field.split('.');
