@@ -20,10 +20,10 @@ jobs:
           cache: true
 
       - name: Install dependencies
-        run: flutter pub get
+        run: flutter pub get --no-example
 
       - name: Build web
-        run: flutter build web --release
+        run: flutter build web --release --pub
 
       - name: Deploy to Firebase Hosting
         run: |
