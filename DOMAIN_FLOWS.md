@@ -8,11 +8,17 @@ The flows prioritize simplicity, deterministic behavior, low operational ambigui
 
 - Canonical claim/ticket state lives in Supabase.
 - Chatwoot is operational workflow only.
+- Chatwoot governs the operational lifecycle of tickets/conversations for human operators, including operator assignment, inbox handling, internal notes, and internal operational state.
+- Supabase governs the canonical business projection shown to owners in the portal.
 - The portal reads canonical projections only.
+- Portal-visible ticket status is a safe projection derived from Chatwoot operational state and Supabase business rules; it must not mirror Chatwoot's internal lifecycle one-to-one.
+- Do not duplicate Chatwoot's operator workflow, assignment model, inbox behavior, or internal lifecycle in Supabase.
 - Identity resolution belongs to the BFF/Supabase layer.
 - Synchronization must remain deterministic and auditable.
 - Avoid direct portal dependency on Chatwoot internals.
 - Supabase is the canonical operational layer for normalized persons, contact points, units, relationships, claims, messages, and channel links.
+- Canonical public ticket numbers are generated in Supabase.
+- Chatwoot conversation IDs remain external operational references.
 - External system IDs, including Chatwoot contact IDs and conversation IDs, are stored as external references and never become canonical identifiers.
 
 ## Simplicity Constraints
@@ -40,7 +46,8 @@ Octavo Piso → BFF sync process → Supabase canonical entities
 3. The BFF normalizes each source record into the canonical Supabase shape.
 4. The BFF upserts Supabase canonical entities using stable source identifiers and deterministic matching rules.
 5. Supabase becomes the canonical operational layer after the sync completes.
-6. Chatwoot is synchronized afterward from Supabase, not directly from Octavo Piso.
+6. Supabase generates or preserves canonical public ticket-number sequencing independently from Chatwoot conversation IDs.
+7. Chatwoot is synchronized afterward from Supabase, not directly from Octavo Piso.
 
 ### Canonical Entities
 
@@ -170,12 +177,15 @@ Portal → BFF → canonical claim creation → canonical `claim_messages` creat
 5. The BFF creates the initial canonical `claim_messages` record in Supabase.
 6. The BFF creates a Chatwoot conversation for operational handling.
 7. The BFF creates a `claim_channel_link` connecting the canonical claim to the Chatwoot conversation.
-8. The portal displays the claim using canonical projections.
+8. Supabase assigns the canonical public ticket number for owner-facing references.
+9. The portal displays the claim using canonical projections.
 
 ### Rules
 
 - The claim is canonical.
+- The canonical public ticket number is generated and stored in Supabase.
 - The Chatwoot conversation is operational.
+- The Chatwoot conversation ID is stored only as an external operational reference.
 - Failure to create the Chatwoot conversation should leave an auditable canonical claim state that can be retried deterministically.
 - The portal should not depend on Chatwoot conversation shape, status names, or message internals.
 
@@ -214,7 +224,8 @@ Operator replies in Chatwoot → webhook → BFF normalization → canonical `cl
 ### Rules
 
 - The portal never exposes raw Chatwoot data.
-- The portal reads canonical claim and message projections only.
+- The portal reads canonical claim, message, and status projections only.
+- Portal-visible status is derived from canonical business rules and mapped Chatwoot operational signals, not from raw Chatwoot fields.
 - Visibility decisions must be deterministic, auditable, and explainable from Supabase records.
 - Unknown or unresolved identities should not gain portal visibility until access is verified.
 
