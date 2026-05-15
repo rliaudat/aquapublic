@@ -1,275 +1,265 @@
 # Domain Flows
 
-This document defines the canonical operational flows for the owner portal, Chatwoot synchronization, identity resolution, cross-channel claims/tickets, and incoming/outgoing communications.
+This document defines the simplified MVP domain flows for Chatwoot, WhatsApp, Supabase, the owner portal, Octavo Piso synchronization, and future extensibility. The goal is not to redesign the platform; it is to reduce operational complexity, harden the MVP, and preserve future AI/VAPI/Jelou paths.
 
-The flows prioritize simplicity, deterministic behavior, low operational ambiguity, maintainability, and AI-assisted implementation friendliness. The architecture intentionally avoids event-driven complexity and distributed workflow orchestration unless a later operational requirement clearly justifies it.
+## Architecture Principles
 
-## Architectural Rules
+- Chatwoot is the operational inbox/workflow for human operators.
+- Chatwoot is self-hosted on DigitalOcean with a minimal operational setup, backups, and accessible logs.
+- Supabase is the canonical operational and business database.
+- Supabase Edge Functions are the preferred MVP orchestration/BFF layer for permissions, webhooks, deterministic automation, and integrations.
+- The owner portal is a mandatory filtered projection layer backed by Supabase.
+- Octavo Piso is the administrative source system.
+- WhatsApp is delivered through Chatwoot in the MVP.
+- WhatsApp provider abstraction remains future-ready for `chatwoot`, `jelou_future`, and `meta_cloud_future`.
+- Persistence happens before synchronization.
+- Observability is mandatory from day 1 through `webhook_events`, `integration_logs`, `sync_outbox`, and `audit_logs`.
+- Core entities include `administration_id` or `organization_id` from day 1, while the MVP remains effectively single-tenant operationally.
 
-- Canonical claim/ticket state lives in Supabase.
-- Chatwoot is operational workflow only.
-- Chatwoot governs the operational lifecycle of tickets/conversations for human operators, including operator assignment, inbox handling, internal notes, and internal operational state.
-- Supabase governs the canonical business projection shown to owners in the portal.
-- The portal reads canonical projections only.
-- Portal-visible ticket status is a safe projection derived from Chatwoot operational state and Supabase business rules; it must not mirror Chatwoot's internal lifecycle one-to-one.
-- Do not duplicate Chatwoot's operator workflow, assignment model, inbox behavior, or internal lifecycle in Supabase.
-- Identity resolution belongs to the BFF/Supabase layer.
-- Synchronization must remain deterministic and auditable.
-- Avoid direct portal dependency on Chatwoot internals.
-- Supabase is the canonical operational layer for normalized persons, contact points, units, relationships, claims, messages, and channel links.
-- Canonical public ticket numbers are generated in Supabase.
-- Chatwoot conversation IDs remain external operational references.
-- External system IDs, including Chatwoot contact IDs and conversation IDs, are stored as external references and never become canonical identifiers.
+## Explicitly Out of MVP Flows
 
-## Simplicity Constraints
+The MVP must not introduce flows for:
 
-- Avoid premature async orchestration.
-- Avoid microservices.
-- Avoid CQRS/event sourcing complexity.
-- Prefer synchronous pragmatic flows initially.
-- Optimize for maintainability and AI-assisted implementation.
-- Prefer explicit, auditable BFF procedures over implicit side effects.
-- Prefer deterministic retries and idempotency keys over distributed workflow engines.
+- VAPI/voice execution.
+- AI autonomous financial actions.
+- Autonomous sensitive ticket closure.
+- LangGraph.
+- Vector databases or RAG systems.
+- Microservices.
+- Kafka/event streaming.
+- BullMQ/queue infrastructure.
+- Complex orchestration engines.
+- Aggressive SaaS multi-tenancy implementation.
+- Advanced analytics.
+- Long-term AI memory.
 
-## 1. Octavo Piso Initial Synchronization Flow
+## 1. Octavo Piso Synchronization Flow
 
 ### Flow
 
-Octavo Piso → BFF sync process → Supabase canonical entities
+Octavo Piso → Supabase Edge Function sync → Supabase canonical entities → `sync_outbox` for downstream projection
 
-1. The BFF runs an explicit Octavo Piso synchronization process.
-2. The BFF reads source records from Octavo Piso for:
-   - persons
-   - contact_points
-   - apartments/units
-   - person-unit relationships
-3. The BFF normalizes each source record into the canonical Supabase shape.
-4. The BFF upserts Supabase canonical entities using stable source identifiers and deterministic matching rules.
-5. Supabase becomes the canonical operational layer after the sync completes.
-6. Supabase generates or preserves canonical public ticket-number sequencing independently from Chatwoot conversation IDs.
-7. Chatwoot is synchronized afterward from Supabase, not directly from Octavo Piso.
-
-### Canonical Entities
-
-- `persons` represent humans or organizations that can own, rent, occupy, report, or receive communications.
-- `contact_points` represent email addresses, phone numbers, and WhatsApp-capable phone numbers associated with persons.
-- `apartments` or `units` represent the physical units used for access control, claims, and ownership/tenant context.
-- `person_unit_relationships` represent owner, tenant, occupant, manager, or other access-relevant relationships between persons and units.
+1. An operator or scheduled job triggers the Octavo Piso sync Edge Function.
+2. The Edge Function reads administrative source data from Octavo Piso.
+3. The function normalizes administrations, buildings, units, persons, contact points, and person-unit relationships.
+4. The function upserts canonical Supabase records with stable Octavo Piso external references.
+5. The function writes `integration_logs` for success/failure details.
+6. The function writes `audit_logs` for sensitive or access-relevant changes.
+7. Any required Chatwoot projection is written as retryable work in `sync_outbox`.
 
 ### Rules
 
-- Octavo Piso is an upstream source for initial and recurring data import, but Supabase is the operational source of truth after synchronization.
-- The synchronization process must be idempotent, deterministic, and auditable.
-- Chatwoot synchronization must run from Supabase canonical entities after the Supabase sync is complete.
-- The portal must never read Octavo Piso directly for operational claim, ticket, or identity decisions.
+- Octavo Piso is an upstream administrative source, not the portal runtime database.
+- The portal must never read Octavo Piso directly.
+- Supabase becomes the canonical operational state after synchronization.
+- Sync must be idempotent, deterministic, and observable.
+- Downstream synchronization is secondary to persistence.
 
 ## 2. Chatwoot Contact Projection Flow
 
 ### Flow
 
-Supabase canonical contacts → Chatwoot contact synchronization
+Supabase canonical contacts → `sync_outbox` → Edge Function worker/retry → Chatwoot contacts
 
-1. The BFF selects canonical persons and verified or operationally approved contact points from Supabase.
-2. The BFF creates or updates Chatwoot contacts as operational projections of those canonical records.
-3. The BFF stores Chatwoot contact IDs as external references linked to the canonical person/contact context.
-4. The BFF updates Chatwoot with display names, email addresses, phone numbers, and relevant metadata derived from Supabase.
-5. Chatwoot is used by operators for communication workflow, not as the canonical contact database.
+1. Supabase stores canonical persons and contact points.
+2. A contact projection task is written to `sync_outbox`.
+3. A retry-capable Edge Function processes the task.
+4. Chatwoot contacts are created or updated as operational projections.
+5. Chatwoot external IDs are stored as external references only.
+6. Results and failures are recorded in `integration_logs`.
 
 ### Rules
 
-- Sync direction is primarily Supabase → Chatwoot.
-- Chatwoot contacts are operational projections.
-- Chatwoot contact IDs are external references only.
-- Supabase canonical contact data wins when Chatwoot and Supabase differ.
-- Any Chatwoot-originated contact observation must be normalized into observed contact handling before becoming canonical.
+- Supabase canonical contact data wins over Chatwoot contact data.
+- Chatwoot contact IDs are external operational references, not canonical identities.
+- Projection failures must be retryable and visible.
+- No Kafka, event bus, BullMQ, or workflow engine is required for Phase 1.
 
-## 3. Incoming Email Flow
+## 3. Incoming WhatsApp Flow
 
 ### Flow
 
-Incoming email → Chatwoot inbox → Chatwoot webhook → BFF normalization → identity resolution → canonical claim update/create → canonical `claim_messages` creation → portal visibility update
+WhatsApp via Chatwoot → Chatwoot webhook → Edge Function → `webhook_events` → identity/session resolution → canonical claim/message update → optional `sync_outbox`
 
-1. An email arrives in the configured Chatwoot email inbox.
-2. Chatwoot creates or updates an operational conversation and emits a webhook.
-3. The BFF receives the webhook and normalizes the payload into a channel-neutral message shape.
-4. The BFF extracts sender email, recipient email, subject, body, attachments, Chatwoot conversation ID, and Chatwoot message ID.
-5. The BFF matches the sender email against existing canonical `contact_points`.
-6. If a matching verified or authorized contact point exists, the BFF resolves the person and any related unit context.
-7. If the email is unknown, the BFF creates an `observed_contacts` record and marks the identity as unresolved or pending review.
-8. The BFF links the message to an existing canonical claim when deterministic linking is possible.
-9. If no existing claim can be deterministically linked, the BFF creates a new canonical claim.
-10. The BFF creates a canonical `claim_messages` record for the email.
-11. The BFF updates the owner-visible claim projection when visibility rules allow it.
-
-### Claim Linking Logic
-
-- Multiple emails may belong to the same claim.
-- Existing claim linking should prefer explicit channel links, known Chatwoot conversation references, normalized subject/thread references, and deterministic unit/person context.
-- If linking is ambiguous, create or route to a reviewable canonical state rather than guessing.
-- Unknown emails may create claims, but those claims should remain visibility-restricted until identity and access are resolved.
+1. A WhatsApp message arrives through Chatwoot.
+2. Chatwoot emits a webhook.
+3. The webhook Edge Function stores the raw envelope in `webhook_events` before business processing.
+4. The function normalizes the payload into a channel-neutral shape.
+5. The function checks `conversation_sessions` for active session context and TTL.
+6. The function resolves the sender through normalized `contact_points` and canonical person-unit relationships.
+7. If the number is shared or ambiguous, the user is asked to explicitly select the person/unit context before sensitive actions proceed.
+8. Deterministic menu handling creates or updates canonical `claims` and `claim_messages` when enough verified context exists.
+9. Ambiguous, unknown, risky, or sensitive cases are escalated to an operator in Chatwoot.
+10. Processing outcomes are recorded in `integration_logs` and, when relevant, `audit_logs`.
 
 ### Rules
 
-- Email identity matching starts with canonical `contact_points`.
-- Unknown emails are recorded as `observed_contacts` and do not automatically become verified contact points.
-- Chatwoot conversation IDs are operational references stored through channel-link records.
-- Portal visibility is derived from canonical claim state and access rules, never raw Chatwoot state.
+- Deterministic WhatsApp menu flows come first.
+- Shared WhatsApp numbers are supported business reality.
+- `conversation_sessions` use TTL and an `active_person_context` when known.
+- Unknown identities are denied by default for sensitive actions.
+- AI must not guess identity, debt, payments, permissions, or unit access.
+- Chatwoot remains the operator workspace; Supabase remains canonical.
 
-## 4. Incoming WhatsApp Flow
+## 4. Portal Login Flow
 
 ### Flow
 
-WhatsApp → Chatwoot → webhook → BFF normalization → identity resolution → canonical claim update/create
+Portal login request → Edge Function → canonical contact validation → OTP/magic link → `portal_sessions`
 
-1. A WhatsApp message arrives in Chatwoot through the configured WhatsApp inbox/provider.
-2. Chatwoot creates or updates an operational conversation and emits a webhook.
-3. The BFF receives the webhook and normalizes the payload into a channel-neutral message shape.
-4. The BFF extracts the sender phone/WhatsApp number, message body, attachments, Chatwoot conversation ID, and Chatwoot message ID.
-5. The BFF normalizes the phone number to a deterministic format before matching.
-6. The BFF matches the normalized number against canonical phone or WhatsApp `contact_points`.
-7. If a known owner or tenant contact point matches, the BFF resolves person and unit context from canonical relationships.
-8. If the number is unknown, the BFF creates an `observed_contacts` record and treats the identity as unresolved or pending review.
-9. The BFF links the message to an existing canonical claim when deterministic linking is possible.
-10. If no deterministic claim link exists, the BFF creates a new canonical claim.
-11. The BFF creates a canonical `claim_messages` record and updates canonical claim state as needed.
+1. A user enters an email address or phone/WhatsApp number.
+2. The portal calls the auth Edge Function.
+3. The function normalizes the identifier.
+4. The function validates the identifier against authorized canonical `contact_points`.
+5. The function sends an OTP or magic link through the appropriate delivery path.
+6. The user verifies the OTP or magic link.
+7. The function creates a `portal_sessions` record tied to the canonical person and allowed access context.
+8. The portal reads only filtered Supabase projections.
 
 ### Rules
 
-- Phone matching must use normalized phone numbers.
-- WhatsApp matching should treat WhatsApp-capable phone contact points as preferred, then fall back to canonical phone contact points when appropriate.
-- Owner and tenant matching is resolved through canonical person-unit relationships.
-- Unknown numbers are recorded as observed contacts and do not automatically become verified or authorized contact points.
-- Portal visibility is granted only after canonical access rules allow it.
-
-## 5. Portal Login Flow
-
-### Flow
-
-Portal user enters email or WhatsApp/phone → BFF validates against canonical `contact_points` → OTP/magic link delivery → session creation → portal access granted
-
-1. The portal user enters an email address or WhatsApp/phone number.
-2. The portal sends the login request to the BFF.
-3. The BFF normalizes the submitted identifier.
-4. The BFF validates the identifier against canonical `contact_points`.
-5. The BFF confirms that the contact point is verified and authorized for portal access.
-6. The BFF sends an OTP or magic link through the appropriate delivery channel.
-7. The user completes verification.
-8. The BFF creates a portal session tied to the canonical person and allowed unit context.
-9. The portal grants access only to canonical projections permitted for that person.
-
-### Rules
-
+- Portal login is mandatory in the MVP.
 - Chatwoot authentication is not used.
-- Only verified and authorized contact points may authenticate.
-- Observed contacts cannot authenticate until promoted through an explicit verification/authorization process.
-- Portal sessions are based on canonical identity, not Chatwoot contacts.
+- Observed or unknown contacts cannot authenticate until explicitly verified and authorized.
+- Session access is based on canonical identity and person-unit relationships.
+
+## 5. Portal Ticket Visibility Flow
+
+### Flow
+
+Portal session → Edge Function/RLS-safe projection → canonical claims/messages/attachments
+
+1. The portal requests visible claims for the authenticated session.
+2. The Edge Function validates `portal_sessions`.
+3. The function resolves authorized units through `person_unit_relationships`.
+4. The function returns owner-visible `claims`, `claim_messages`, and `claim_attachments` only.
+5. Internal Chatwoot notes, internal metadata, and non-owner-visible artifacts are excluded.
+6. PDF and attachment access is granted only through owner-visible attachment rules.
+
+### Rules
+
+- The portal must not read Chatwoot directly.
+- Portal-visible status is a safe canonical projection, not raw Chatwoot lifecycle state.
+- Visibility decisions must be deterministic, auditable, and explainable from Supabase records.
+- Owner-visible attachments and PDF visibility are mandatory MVP capabilities.
 
 ## 6. Portal Ticket Creation Flow
 
 ### Flow
 
-Portal → BFF → canonical claim creation → canonical `claim_messages` creation → Chatwoot conversation creation → `claim_channel_link` creation
+Portal → Edge Function → `claims` → `claim_messages` → `claim_attachments` if present → `sync_outbox` → Chatwoot conversation
 
-1. A portal user submits a new ticket/claim from an authorized unit context.
-2. The portal sends the request to the BFF.
-3. The BFF validates the user's session, person, contact point, and unit access from canonical data.
-4. The BFF creates the canonical claim in Supabase.
-5. The BFF creates the initial canonical `claim_messages` record in Supabase.
-6. The BFF creates a Chatwoot conversation for operational handling.
-7. The BFF creates a `claim_channel_link` connecting the canonical claim to the Chatwoot conversation.
-8. Supabase assigns the canonical public ticket number for owner-facing references.
-9. The portal displays the claim using canonical projections.
+1. An authenticated portal user creates a claim from an authorized unit context.
+2. The Edge Function validates the portal session, person, contact point, and unit access.
+3. The function creates the canonical `claims` record and public ticket number in Supabase.
+4. The function creates the initial `claim_messages` record.
+5. Any uploaded owner-visible files are stored and represented in `claim_attachments`.
+6. The function writes a Chatwoot conversation creation task to `sync_outbox`.
+7. A retry-capable worker creates or updates the Chatwoot conversation.
+8. The worker creates or updates a minimal `claim_channel_links` record for provider `chatwoot`.
 
 ### Rules
 
-- The claim is canonical.
-- The canonical public ticket number is generated and stored in Supabase.
-- The Chatwoot conversation is operational.
-- The Chatwoot conversation ID is stored only as an external operational reference.
-- Failure to create the Chatwoot conversation should leave an auditable canonical claim state that can be retried deterministically.
-- The portal should not depend on Chatwoot conversation shape, status names, or message internals.
+- The claim exists canonically even if Chatwoot creation fails temporarily.
+- Chatwoot conversation IDs remain external references.
+- The portal displays canonical Supabase state, not Chatwoot state.
+- Synchronization failures must be visible and retryable.
 
 ## 7. Operator Response Flow
 
 ### Flow
 
-Operator replies in Chatwoot → webhook → BFF normalization → canonical `claim_messages` update → owner-visible projection update
+Operator reply in Chatwoot → Chatwoot webhook → Edge Function → `webhook_events` → `claim_channel_links` → `claim_messages`
 
-1. An operator replies to a Chatwoot conversation.
-2. Chatwoot emits a webhook for the new message or updated conversation.
-3. The BFF normalizes the Chatwoot payload into the canonical message shape.
-4. The BFF resolves the `claim_channel_link` for the Chatwoot conversation.
-5. The BFF creates or updates the corresponding canonical `claim_messages` record.
-6. The BFF applies owner-visible filtering rules.
-7. The BFF updates the owner-visible projection when the message is visible.
+1. An operator replies in Chatwoot.
+2. Chatwoot emits a webhook.
+3. The Edge Function persists the webhook in `webhook_events`.
+4. The function resolves the canonical claim through `claim_channel_links`.
+5. The function stores an owner-visible `claim_messages` record only when the message is safe to expose.
+6. Internal notes remain internal and are never exposed to the portal.
+7. Results are recorded in `integration_logs` and sensitive decisions in `audit_logs`.
 
 ### Rules
 
-- Internal notes remain internal.
-- Owner-visible filtering rules apply to every operator-originated message.
-- Chatwoot-only internal metadata is not exposed to the portal.
+- Owner-visible filtering applies to every operator-originated message.
+- Internal Chatwoot notes must never appear in the portal.
 - Message synchronization must be idempotent using stable external message references.
+- Sensitive claim closure requires human/operator-controlled handling.
 
-## 8. Claim Visibility Flow
+## 8. Deterministic Automation and Operator Escalation Flow
 
-### Visibility Rules
+### Flow
 
-- Owner visibility is derived from canonical person-unit relationships and claim-unit associations.
-- A person can view a claim when canonical access rules connect that person to the claim's unit or an explicitly permitted claim participant role.
-- Unit-based access is the primary access model for owner portal visibility.
-- Tenant access may be narrower than owner access and should be represented explicitly through canonical relationship roles.
-- Multiple contacts per unit may have access when their canonical person-unit relationship authorizes it.
-- Future family-member access should be modeled as explicit canonical relationships or delegated access records, not by sharing Chatwoot contacts.
+Inbound intent/menu step → deterministic rules → safe action or operator escalation
 
-### Rules
-
-- The portal never exposes raw Chatwoot data.
-- The portal reads canonical claim, message, and status projections only.
-- Portal-visible status is derived from canonical business rules and mapped Chatwoot operational signals, not from raw Chatwoot fields.
-- Visibility decisions must be deterministic, auditable, and explainable from Supabase records.
-- Unknown or unresolved identities should not gain portal visibility until access is verified.
-
-## 9. Identity Resolution Flow
-
-### Matching Strategy
-
-1. Normalize the inbound identifier by channel.
-2. Match email addresses against canonical email `contact_points`.
-3. Match phone numbers against canonical phone `contact_points` using deterministic phone normalization.
-4. Match WhatsApp numbers against WhatsApp-capable phone contact points first, then appropriate phone contact points.
-5. Resolve owner, tenant, occupant, or other roles through canonical person-unit relationships.
-6. When no deterministic match exists, create an `observed_contacts` record.
-7. Link observed contacts to claims, channel records, and raw external references for later review.
-8. Merge identities later through explicit audited operations when evidence supports it.
+1. The system evaluates the current message against known deterministic menu steps.
+2. The system checks session context, identity, unit access, claim sensitivity, and required data.
+3. If all required context is verified, the system performs the safe deterministic action.
+4. If anything is ambiguous or sensitive, the system escalates to an operator in Chatwoot.
+5. AI may prepare a summary, classification, or draft for the operator but cannot execute sensitive actions.
 
 ### Rules
 
-- The same person may use multiple channels.
-- Claims aggregate interactions across channels.
-- Multi-channel linking happens through canonical person, contact point, observed contact, and claim-channel link records.
-- Observed contacts are evidence, not authorization.
-- Merging identities must preserve auditability and external references.
-- Ambiguous matches should remain unresolved or reviewable rather than being guessed.
+- Deterministic flows are the default automation model.
+- Manual fallback must always be possible.
+- Unknown or ambiguous identities are denied by default for sensitive actions.
+- Logs/debugging are prioritized over advanced dashboards.
 
-## 10. Future Voice/VAPI Flow (High-Level Only)
+## 9. AI Assist Flow
 
-### High-Level Flow
+### Flow
 
-Voice/VAPI call → voice transcription → BFF normalization → identity matching → claim linking → future AI summaries
+Canonical data/tool output → AI assist → operator-visible suggestion/draft → human action if needed
 
-1. A future voice provider captures a call and produces call metadata and transcription.
-2. The BFF normalizes the voice interaction into the same channel-neutral communication model used for email and WhatsApp.
-3. The BFF attempts identity matching from caller phone number and available call metadata.
-4. The BFF links the interaction to an existing canonical claim when deterministic linking is possible.
-5. If no deterministic link exists, the BFF creates or routes to a canonical claim state appropriate for review.
-6. Future AI summaries may assist operators and owners after canonical visibility and review rules are defined.
+1. The system gathers verified canonical data and tool outputs.
+2. AI may summarize, classify, extract intent/entities, enrich operator context, suggest responses, or prepare drafts.
+3. AI output is shown as assistive context or a draft.
+4. Human operators approve, modify, or ignore AI suggestions.
+5. AI-assisted recommendations and sensitive uses are recorded in `audit_logs` when relevant.
 
 ### Rules
 
-- Do not design implementation details yet.
-- Voice/VAPI must follow the same canonical ownership rules as other channels.
-- Transcripts and summaries are operational inputs until persisted as canonical visible messages or projections.
-- AI summaries must not bypass identity, claim-linking, or visibility rules.
+AI may:
+
+- Summarize.
+- Classify.
+- Extract intent/entities.
+- Enrich operator context.
+- Suggest responses.
+- Prepare drafts.
+- Assist operators.
+
+AI must not:
+
+- Autonomously expose sensitive data.
+- Autonomously resolve legal or financial disputes.
+- Autonomously approve risky operations.
+- Autonomously close sensitive claims.
+- Hallucinate debt/payment information.
+
+AI responses must rely on verified tool outputs and deterministic data access.
+
+## 10. Future Jelou Adapter Flow
+
+Jelou is not part of the MVP implementation. The future integration point is the provider abstraction used by `claim_channel_links`, `conversation_sessions`, `webhook_events`, `integration_logs`, and `sync_outbox`.
+
+Future Jelou support must:
+
+- Preserve Supabase canonical claims and messages.
+- Preserve owner portal filtering.
+- Use provider value `jelou_future` or a deliberate later replacement.
+- Avoid bypassing identity, permission, audit, and visibility rules.
+
+## 11. Future VAPI Integration Point
+
+VAPI/voice is explicitly out of MVP. The future integration point is a channel adapter that normalizes calls/transcripts into the same canonical claim/message model.
+
+Future VAPI support must:
+
+- Preserve canonical Supabase claim ownership.
+- Treat transcripts and summaries as operational inputs until visibility rules permit exposure.
+- Use verified data access for AI summaries.
+- Never bypass identity matching, permissions, or owner-visible filtering.
 
 Recommended next step:
-"Update API_SURFACE.md for canonical sync and portal APIs."
+"Create the actual Supabase schema and Edge Function implementation plan."
