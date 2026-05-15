@@ -1,31 +1,73 @@
 # Database Model
 
-This document defines the simplified MVP database model for the Aqua owner-support platform. The model is intentionally small, auditable, and implementation-friendly while preserving the future option to add richer AI, Jelou, VAPI, and SaaS capabilities.
+This document defines the final simplified MVP database model for Aqua Public after architecture review. The goal is to maximize implementation success probability while preserving future extensibility for SaaS, AI, VAPI, Jelou, direct Meta Cloud API, and richer automation in later phases.
+
+The MVP is intentionally pragmatic:
+
+- Chatwoot is self-hosted on DigitalOcean and used as the operational inbox for WhatsApp and human support work.
+- Supabase is the canonical operational and business database.
+- Supabase Edge Functions are the preferred orchestration layer for MVP webhooks, permissions, deterministic flows, and integrations.
+- The Next.js owner portal reads filtered Supabase data only.
+- Octavo Piso remains the key administrative integration source.
+- WhatsApp flows should be deterministic first.
+- AI is assistive/copilot only in the MVP.
 
 ## MVP Database Principles
 
-- Supabase is the canonical operational and business database.
-- Chatwoot is self-hosted on DigitalOcean with minimal operations, backups, and logs, and acts as an operational inbox/workflow system rather than the source of truth for claims, persons, units, portal access, or owner-visible state.
-- Supabase Edge Functions are the preferred MVP orchestration layer for permissions, webhooks, deterministic automation, and integrations.
-- A larger backend such as NestJS may be introduced later only when operational load or complexity justifies it.
-- Every core entity includes `administration_id` or `organization_id` from day one to preserve SaaS evolution, while the MVP remains effectively single-tenant operationally.
-- Persistence happens before synchronization: write the canonical Supabase record first, then synchronize to Chatwoot, Octavo Piso, or other providers through retryable tasks.
-- Observability is mandatory from day one through `webhook_events`, `integration_logs`, `sync_outbox`, and `audit_logs`.
-- The schema should not include Kafka-style event streams, workflow-engine state, vector databases, long-term AI memory, LangGraph state, or advanced analytics tables in the MVP.
+- Keep the model simple enough to implement reliably.
+- Preserve future extensibility through stable IDs, provider fields, external references, and clear ownership boundaries.
+- Avoid enterprise overengineering, distributed-system assumptions, complex workflow state, and premature AI-specific tables.
+- Supabase is the source of truth for persons, units, claims, owner-visible messages, portal access, audit records, and integration state.
+- Chatwoot is an operational artifact and workflow surface; it is not the canonical database.
+- Chatwoot conversation IDs are external references only.
+- `claim_channel_links` is the abstraction layer between canonical claims and external channel/provider objects.
+- Write canonical Supabase records before synchronizing to Chatwoot, Octavo Piso, WhatsApp providers, or other external systems.
+- Use lightweight observability from day one: `webhook_events`, `integration_logs`, `sync_outbox`, and `audit_logs`.
+- Use retryable persistence tables instead of Kafka, event buses, BullMQ, or complex workflow engines.
+- MVP operations are effectively single-tenant, but `administration_id` exists from day one in core entities to support future SaaS and multi-administration isolation.
 
-## Canonical MVP Tables
+## Core Stack Responsibilities
+
+### Supabase
+
+Supabase stores canonical operational data and owner-visible state. Tables in this document should be designed for clear authorization checks, deterministic lookups, idempotent webhook processing, and reliable synchronization.
+
+### Supabase Edge Functions
+
+Supabase Edge Functions are the MVP orchestration layer. They should handle webhook ingestion, Chatwoot synchronization, Octavo Piso integration calls, portal authorization checks, deterministic WhatsApp flow decisions, sync outbox workers, and AI-assist tool boundaries.
+
+A larger backend can be introduced later if operational load or complexity justifies it. The MVP should not assume a large backend, microservice architecture, or separate workflow platform.
+
+### Chatwoot
+
+Chatwoot is the MVP operational provider for WhatsApp support. It provides the inbox, assignment, operator workflow, and WhatsApp conversation handling. Chatwoot does not own canonical claims, persons, units, portal access, owner-visible statuses, or audit history.
+
+### Next.js Owner Portal
+
+The owner portal reads and writes through Supabase and/or Supabase Edge Functions. It must not depend on Chatwoot as an authorization source or canonical ticket database.
+
+### Octavo Piso
+
+Octavo Piso integration provides administrative context and external references for buildings, units, persons, relationships, and possibly claim-related operational data. Supabase normalizes the data needed for MVP flows.
+
+## Required Core Entities
 
 ### administrations
 
-Represents the administration/operator context for the MVP.
+Represents the administration/operator boundary.
 
 Purpose:
 
-- Provide an early boundary for future SaaS or multi-administration support.
-- Scope buildings, units, persons, claims, logs, and integrations.
-- Keep MVP operations effectively single-tenant without blocking future expansion.
+- Provide future SaaS compatibility and organizational isolation.
+- Scope buildings, units, persons, portal access, claims, webhooks, integrations, outbox tasks, and audit records.
+- Keep the MVP operationally single-tenant while making future multi-administration support possible.
 
-Recommended fields:
+Relationships:
+
+- One `administrations` record owns many `buildings`, `apartments_or_units`, `persons`, `contact_points`, `person_unit_relationships`, `portal_accounts`, `claims`, `webhook_events`, `integration_logs`, `sync_outbox` tasks, and `audit_logs`.
+- Core entities must include `administration_id` from day one, even if the first production deployment has only one administration.
+
+Suggested fields:
 
 - `id`
 - `name`
@@ -36,15 +78,21 @@ Recommended fields:
 
 ### buildings
 
-Represents buildings, barrios, consorcios, or equivalent groups synchronized from Octavo Piso or configured directly.
+Represents buildings, barrios, consorcios, or equivalent managed groups.
 
 Purpose:
 
 - Group units and claims under an administration.
-- Support owner portal filtering and operator context.
-- Preserve a simple future reporting boundary without adding enterprise tenant hierarchy.
+- Store Octavo Piso or manually configured building references.
+- Provide a practical filtering boundary for operators and the owner portal.
 
-Recommended fields:
+Relationships:
+
+- Belongs to `administrations`.
+- Has many `apartments_or_units`.
+- Can be referenced by many `claims`.
+
+Suggested fields:
 
 - `id`
 - `administration_id`
@@ -57,15 +105,22 @@ Recommended fields:
 
 ### apartments_or_units
 
-Represents apartments, units, lots, or other owner-visible property units.
+Represents apartments, units, parking spaces, storage units, lots, or other access-relevant property units.
 
 Purpose:
 
-- Provide the canonical access-control and claim-context unit.
-- Normalize Octavo Piso property concepts into one simple MVP table.
-- Support owner-visible ticket filtering.
+- Provide the main owner-portal visibility boundary.
+- Normalize Octavo Piso unit concepts into one MVP table.
+- Attach claims to the property context owners understand.
 
-Recommended fields:
+Relationships:
+
+- Belongs to `administrations`.
+- Usually belongs to `buildings`.
+- Has many `person_unit_relationships`.
+- Can be referenced by many `claims`.
+
+Suggested fields:
 
 - `id`
 - `administration_id`
@@ -80,15 +135,23 @@ Recommended fields:
 
 ### persons
 
-Represents a human or organization that can own, occupy, report, reply, or receive communications.
+Represents humans or organizations that can own, rent, occupy, report, reply, or receive communications.
 
 Purpose:
 
-- Canonical identity record for portal access, claim authorship, and contact resolution.
-- Avoid duplicating people across WhatsApp, email, Chatwoot, Octavo Piso, or the portal.
-- Preserve future AI compatibility by giving AI tools deterministic person context instead of relying on chat history.
+- Provide canonical identity for portal access, claim authorship, and contact resolution.
+- Avoid duplicating people across WhatsApp, email, Chatwoot, Octavo Piso, and the portal.
+- Give deterministic context to flows and future AI tools without relying on chat history.
 
-Recommended fields:
+Relationships:
+
+- Belongs to `administrations`.
+- Has many `contact_points`.
+- Has many `person_unit_relationships`.
+- Can own `portal_accounts`.
+- Can author or be the primary requester for `claims` and `claim_messages`.
+
+Suggested fields:
 
 - `id`
 - `administration_id`
@@ -102,15 +165,23 @@ Recommended fields:
 
 ### contact_points
 
-Represents email addresses, phone numbers, and WhatsApp-capable identifiers linked to persons.
+Represents emails, phone numbers, and WhatsApp-capable identifiers linked to persons.
 
 Purpose:
 
 - Resolve inbound WhatsApp and portal login identities deterministically.
 - Support OTP delivery and future provider changes.
-- Distinguish verified authorization data from observed inbound data.
+- Distinguish verified contact data from observed inbound contact data.
+- Support shared family WhatsApp numbers without assuming a phone number always maps to one active person.
 
-Recommended fields:
+Relationships:
+
+- Belongs to `administrations`.
+- Belongs to `persons` when the contact has been associated with a person.
+- Can be referenced by `portal_accounts` as an authorized login/contact method.
+- Can be referenced by `conversation_sessions` for session pinning.
+
+Suggested fields:
 
 - `id`
 - `administration_id`
@@ -129,9 +200,9 @@ Recommended fields:
 
 Rules:
 
-- Verified contact points may authorize portal access when relationship rules allow it.
+- Verified contact points may support portal access when relationship rules allow it.
 - Observed-only contact points do not authorize access until explicitly verified.
-- Shared WhatsApp numbers are supported by combining contact matching with session pinning and explicit person selection for sensitive actions.
+- Shared WhatsApp numbers require session context and explicit person selection before sensitive actions.
 
 ### person_unit_relationships
 
@@ -140,10 +211,16 @@ Represents access-relevant relationships between persons and units.
 Purpose:
 
 - Drive owner portal visibility.
-- Represent owners, tenants, residents, authorized contacts, and other roles without overloading the `persons` table.
-- Provide deterministic context for WhatsApp menu flows and operator escalation.
+- Represent owners, tenants, residents, authorized contacts, administrators, and other access roles.
+- Provide deterministic person/unit context for WhatsApp menu flows and operator escalation.
 
-Recommended fields:
+Relationships:
+
+- Belongs to `administrations`.
+- Links one `person` to one `apartments_or_units` record.
+- Used by `claims`, `portal_sessions`, and deterministic flows to evaluate access.
+
+Suggested fields:
 
 - `id`
 - `administration_id`
@@ -167,11 +244,18 @@ Represents owner portal authentication eligibility.
 
 Purpose:
 
-- Support mandatory Next.js owner portal access.
+- Support Next.js owner portal access.
 - Bind portal login to verified canonical persons and contact points.
 - Keep portal authentication independent from Chatwoot accounts.
 
-Recommended fields:
+Relationships:
+
+- Belongs to `administrations`.
+- Belongs to `persons`.
+- Usually references a primary verified `contact_points` record.
+- Has many `portal_sessions`.
+
+Suggested fields:
 
 - `id`
 - `administration_id`
@@ -184,15 +268,22 @@ Recommended fields:
 
 ### portal_sessions
 
-Represents active owner portal sessions or session references.
+Represents authenticated owner portal sessions or session references.
 
 Purpose:
 
-- Support OTP login and scoped owner portal access.
-- Preserve an audit trail of access without exposing Chatwoot internals.
-- Enforce expiration and revocation.
+- Support OTP or magic-link login and scoped owner portal access.
+- Preserve an audit trail of portal access.
+- Enforce expiration and revocation without exposing Chatwoot internals.
 
-Recommended fields:
+Relationships:
+
+- Belongs to `administrations`.
+- Belongs to `portal_accounts`.
+- Belongs to `persons`.
+- Produces `audit_logs` for sensitive access and permission decisions.
+
+Suggested fields:
 
 - `id`
 - `administration_id`
@@ -205,15 +296,23 @@ Recommended fields:
 
 ### claims
 
-Represents the canonical ticket/claim record.
+Represents the canonical business ticket/claim record.
 
 Purpose:
 
 - Store the owner-visible and business-canonical claim state.
 - Generate public ticket numbers independently from Chatwoot conversation IDs.
 - Link property context, requester context, portal visibility, and operational status.
+- Remain valid even when Chatwoot synchronization fails or is delayed.
 
-Recommended fields:
+Relationships:
+
+- Belongs to `administrations`.
+- Usually belongs to `buildings` and `apartments_or_units`.
+- References a primary `persons` requester when known.
+- Has many `claim_messages`, `claim_channel_links`, and `claim_attachments`.
+
+Suggested fields:
 
 - `id`
 - `administration_id`
@@ -229,15 +328,18 @@ Recommended fields:
 - `owner_visible_status`
 - `source_channel`
 - `created_by_person_id`
+- `requires_manual_review`
 - `created_at`
 - `updated_at`
 - `closed_at`
 
 Rules:
 
-- `claims` are canonical.
-- Chatwoot conversation IDs are external references, never canonical identifiers.
-- Sensitive or ambiguous claims must escalate to operators rather than being autonomously closed.
+- `claims` are the canonical business tickets.
+- Chatwoot conversations are operational artifacts only.
+- Chatwoot conversation IDs remain external references.
+- `claim_channel_links` is the required abstraction layer between claims and Chatwoot or future providers.
+- Sensitive, ambiguous, legal, financial, or identity-dependent claims must escalate to operators rather than being autonomously resolved.
 
 ### claim_messages
 
@@ -246,10 +348,17 @@ Represents canonical messages attached to claims.
 Purpose:
 
 - Provide owner-visible conversation history in the portal.
-- Store normalized messages from portal, WhatsApp, Chatwoot, and future channels.
+- Store normalized messages from portal, WhatsApp, Chatwoot, system actions, and future channels.
 - Apply explicit visibility filtering before exposing anything to owners.
 
-Recommended fields:
+Relationships:
+
+- Belongs to `administrations`.
+- Belongs to `claims`.
+- Can reference an author `person` when applicable.
+- Can have many `claim_attachments`.
+
+Suggested fields:
 
 - `id`
 - `administration_id`
@@ -265,19 +374,25 @@ Recommended fields:
 Rules:
 
 - Internal Chatwoot notes must not be copied into owner-visible messages.
-- AI-generated drafts may be stored only when clearly marked as assistive context or when sent by an approved operator action.
+- AI-generated drafts may be stored only when clearly marked as assistive context or sent through an approved operator action.
 
 ### claim_channel_links
 
-Minimal external-channel linking table.
+Represents the minimal mapping between canonical claims and external channel/provider objects.
 
 Purpose:
 
 - Link one canonical claim to operational Chatwoot conversations and future provider threads.
-- Preserve provider abstraction without over-modeling channel-specific state.
-- Support future values such as `jelou_future`, `meta_cloud_future`, and voice references without redesigning claims.
+- Preserve provider abstraction without over-modeling channel-specific lifecycle state.
+- Support future migration to Jelou or direct Meta Cloud API without changing canonical claims.
 
-Recommended fields:
+Relationships:
+
+- Belongs to `administrations`.
+- Belongs to `claims`.
+- References external provider IDs only; it does not own claim state.
+
+Suggested fields:
 
 - `id`
 - `administration_id`
@@ -294,19 +409,26 @@ Rules:
 
 - Keep this table minimal.
 - Do not mirror Chatwoot's full conversation lifecycle.
-- Use stable provider references for idempotent synchronization.
+- Use stable provider references and idempotency keys for synchronization.
+- Chatwoot IDs never become claim IDs, portal IDs, or authorization IDs.
 
 ### claim_attachments
 
-Represents owner-visible and operational attachments associated with claims or messages.
+Represents lightweight attachments associated with claims or claim messages.
 
 Purpose:
 
-- Support owner portal attachments and PDF visibility.
-- Store metadata for files uploaded from portal, WhatsApp, Chatwoot, or imported systems.
-- Control owner visibility explicitly.
+- Support owner-visible attachments in the portal.
+- Support PDFs, WhatsApp media, uploaded images, and future documents.
+- Store file metadata and visibility without introducing a complex document-management system.
 
-Recommended fields:
+Relationships:
+
+- Belongs to `administrations`.
+- Belongs to `claims`.
+- Optionally belongs to `claim_messages`.
+
+Suggested fields:
 
 - `id`
 - `administration_id`
@@ -323,50 +445,68 @@ Recommended fields:
 
 Rules:
 
-- The portal displays only attachments marked owner-visible.
+- The owner portal displays only attachments explicitly marked owner-visible.
 - PDFs are supported as first-class owner-visible attachments when access rules allow it.
+- Raw internal or operator-only artifacts are private by default.
 
 ### conversation_sessions
 
-Represents temporary conversational context for shared phone numbers and deterministic WhatsApp flows.
+Represents short-lived conversational context for deterministic WhatsApp flows, especially shared family numbers.
 
 Purpose:
 
 - Support shared WhatsApp numbers as a normal business reality.
-- Pin the active person/unit context for a short TTL after explicit selection.
+- Pin the active person context after explicit person selection.
+- Store a TTL so stale identity context is not reused indefinitely.
 - Avoid guessing identity for ambiguous or sensitive actions.
 
-Recommended fields:
+Relationships:
+
+- Belongs to `administrations`.
+- Can reference `contact_points`.
+- Can reference the currently selected `persons` and `apartments_or_units` records.
+- Can be linked operationally to Chatwoot or future provider conversations through external references.
+
+Suggested fields:
 
 - `id`
 - `administration_id`
 - `provider`
 - `external_conversation_id`
 - `contact_point_id`
-- `active_person_id`
+- `current_person_id`
 - `active_unit_id`
+- `source_channel`
 - `state`
+- `last_interaction_at`
 - `expires_at`
 - `created_at`
 - `updated_at`
 
 Rules:
 
-- Ambiguous sensitive actions require explicit user selection.
-- Expired sessions must re-confirm context.
-- Session context helps deterministic automation; it is not a replacement for authorization checks.
+- `current_person_id` represents the active person context for the pinned session.
+- Sensitive actions require explicit person selection when a contact point maps to multiple people.
+- Expired sessions must re-confirm person context.
+- Session context assists deterministic automation; it does not replace authorization checks against `person_unit_relationships`.
 
 ### webhook_events
 
-Stores raw and normalized inbound webhook receipts.
+Stores inbound webhook metadata and payloads.
 
 Purpose:
 
-- Provide mandatory day-one observability.
-- Make webhook ingestion idempotent and debuggable.
-- Preserve source payload evidence without turning webhooks into an event-streaming architecture.
+- Provide day-one debugging and replay analysis.
+- Retain raw payloads or safe raw-payload references for incident review.
+- Make webhook ingestion idempotent and traceable.
+- Support troubleshooting without introducing Kafka or event-streaming infrastructure.
 
-Recommended fields:
+Relationships:
+
+- Belongs to `administrations` when resolvable.
+- May be associated with claims, messages, channel links, or sync tasks through metadata or related IDs.
+
+Suggested fields:
 
 - `id`
 - `administration_id`
@@ -374,6 +514,7 @@ Recommended fields:
 - `event_type`
 - `external_event_id`
 - `payload`
+- `payload_hash`
 - `received_at`
 - `processed_at`
 - `processing_status`
@@ -381,14 +522,20 @@ Recommended fields:
 
 ### integration_logs
 
-Stores integration attempts and outcomes.
+Stores external API call diagnostics.
 
 Purpose:
 
-- Debug Chatwoot, Octavo Piso, OTP, attachment, and future provider operations.
-- Prioritize logs and traceability over advanced dashboards.
+- Log calls to Chatwoot, Octavo Piso, OTP/message providers, storage/attachment services, and future providers.
+- Capture latency, success/failure, request/response summaries, and troubleshooting context.
+- Provide practical observability before advanced dashboards.
 
-Recommended fields:
+Relationships:
+
+- Belongs to `administrations`.
+- Can reference related canonical entities such as claims, persons, units, or outbox tasks.
+
+Suggested fields:
 
 - `id`
 - `administration_id`
@@ -399,25 +546,35 @@ Recommended fields:
 - `request_summary`
 - `response_summary`
 - `status`
+- `latency_ms`
 - `error_message`
 - `created_at`
 
 ### sync_outbox
 
-Simplified reliability table for retryable synchronization tasks.
+Stores retryable synchronization tasks for eventual consistency.
 
 Purpose:
 
-- Implement persistence-first, synchronization-second flows.
-- Retry Chatwoot, Octavo Piso, attachment, notification, and future provider operations without Kafka, BullMQ, or workflow engines.
-- Provide eventual consistency with manual fallback.
+- Implement persistence-first synchronization.
+- Retry Chatwoot, Octavo Piso, attachment, notification, and future-provider operations.
+- Preserve a recoverable task record when an external service is unavailable.
+- Avoid Kafka, event bus, BullMQ, and complex workflow-engine complexity in the MVP.
 
-Recommended fields:
+Relationships:
+
+- Belongs to `administrations`.
+- Can reference claims, messages, channel links, attachments, persons, units, or integration records through payload or related IDs.
+- Produces `integration_logs` as external calls are attempted.
+
+Suggested fields:
 
 - `id`
 - `administration_id`
 - `task_type`
 - `target_system`
+- `related_entity_type`
+- `related_entity_id`
 - `payload`
 - `idempotency_key`
 - `status`
@@ -429,20 +586,27 @@ Recommended fields:
 
 Rules:
 
-- Failed external sync must not erase canonical Supabase records.
+- Failed external synchronization must not erase canonical Supabase records.
 - Retries must be idempotent.
 - Operators should be able to inspect and manually recover failed tasks.
 
 ### audit_logs
 
-Stores security-relevant and business-relevant actions.
+Stores security-relevant and business-relevant audit events.
 
 Purpose:
 
-- Preserve accountability for portal access, claim changes, identity decisions, operator-sensitive actions, AI assist usage, and integration recovery.
-- Support debugging and compliance without advanced analytics infrastructure.
+- Track private data access and owner data access.
+- Record sensitive actions, portal access, identity decisions, permission decisions, claim changes, operator actions, AI-assist usage, and integration recovery.
+- Support security tracing and accountability without advanced analytics infrastructure.
 
-Recommended fields:
+Relationships:
+
+- Belongs to `administrations`.
+- Can reference any canonical entity through `entity_type` and `entity_id`.
+- Can reference actors such as owners, operators, system processes, Edge Functions, or AI-assist tools.
+
+Suggested fields:
 
 - `id`
 - `administration_id`
@@ -452,251 +616,41 @@ Recommended fields:
 - `entity_type`
 - `entity_id`
 - `metadata`
+- `source_channel`
 - `created_at`
 
-## AI Compatibility Without AI Over-Modeling
+## Claims Are Canonical
 
-The MVP should not add vector databases, RAG tables, LangGraph state, autonomous-agent memory, or complex AI workflow entities. AI assist features can use verified Supabase records, recent claim messages, and integration outputs as deterministic context.
+Claims are the canonical business tickets in the Aqua Public system. All owner-visible ticket numbers, statuses, claim categories, requester context, property context, and portal-visible history should derive from Supabase claim records.
 
-AI may summarize, classify, extract intent/entities, enrich operator context, suggest responses, prepare drafts, and assist operators. AI must not autonomously expose sensitive data, resolve legal or financial disputes, approve risky operations, close sensitive claims, or invent debt/payment data. AI outputs must rely on verified tool outputs and deterministic data access.
+Chatwoot conversations are operational artifacts. They help operators receive WhatsApp messages, triage issues, assign work, and reply to owners, but they do not define canonical claim identity or authorization.
 
-## Provider Abstraction
+The required boundary is:
 
-The MVP starts with WhatsApp through Chatwoot. The provider abstraction is preserved through simple provider fields and `claim_channel_links` values:
+- `claims` stores business truth.
+- `claim_messages` stores canonical owner-visible or system-visible message history.
+- `claim_attachments` stores canonical attachment metadata and visibility.
+- `claim_channel_links` maps canonical claims to Chatwoot conversations and future provider threads.
+- Chatwoot IDs remain external references.
 
-- `chatwoot`
-- `jelou_future`
-- `meta_cloud_future`
-- `vapi_future`
+## Shared Phone Numbers and Session Pinning
 
-Do not implement Jelou, Meta Cloud direct integration, or VAPI in Phase 1. Keep table shapes ready for them without adding their operational complexity.
-This document defines the simplified MVP data model for Aqua Public. The goal is to maximize implementation success probability while preserving future extensibility for AI, Jelou, VAPI, and SaaS evolution.
+Shared family WhatsApp numbers are expected. The model must not assume one phone number always equals one person.
 
-## MVP Database Principles
+MVP behavior:
 
-- Supabase is the canonical database for operational and business state.
-- Chatwoot is the operational inbox/workflow and must not become the canonical database.
-- Chatwoot is self-hosted on DigitalOcean with a minimal setup, basic backups, and accessible logs.
-- Octavo Piso is the administrative source system and upstream integration source.
-- Supabase Edge Functions are the preferred MVP orchestration layer for permissions, webhooks, deterministic automation, and integrations.
-- The Next.js owner portal reads filtered Supabase projections only.
-- Persistence happens before synchronization or automation.
-- Observability is mandatory from day 1 through simple tables and logs before advanced dashboards.
-- The MVP remains effectively single-tenant operationally, but core records include `administration_id` or `organization_id` from day 1 so the schema can evolve toward SaaS later.
+- Match inbound WhatsApp contacts through `contact_points`.
+- If a phone number maps to multiple possible persons, require explicit person selection before sensitive actions.
+- Store short-lived active context in `conversation_sessions.current_person_id`.
+- Track `last_interaction_at`, `expires_at`, and `source_channel` for TTL-based session pinning.
+- Reconfirm person context after session expiry.
+- Always re-check authorization through `person_unit_relationships` before showing private unit or claim information.
 
-## Explicitly Out of the MVP Data Model
+This keeps deterministic flows safe while avoiding a complex identity engine.
 
-The MVP schema must not introduce premature distributed-system or enterprise abstractions for:
+## AI Scope
 
-- Kafka or event-streaming infrastructure.
-- BullMQ or queue infrastructure.
-- Microservices.
-- LangGraph.
-- Vector databases.
-- RAG systems.
-- Long-term AI memory.
-- Complex workflow engines.
-- Autonomous AI financial operations.
-- Autonomous sensitive claim closure.
-- Aggressive SaaS multi-tenancy beyond early IDs and clear ownership boundaries.
-
-## Required Core Entities
-
-### `administrations`
-
-Represents the administration/management context. In the MVP this is likely one operational administration, but the table establishes a clean boundary for future multi-administration or SaaS use.
-
-Minimum responsibilities:
-
-- Owns buildings, persons, units, claims, integration logs, and audit logs.
-- Stores display name and basic operational settings.
-- Provides the default `administration_id` for all canonical records.
-
-### `buildings`
-
-Represents buildings administered through the platform.
-
-Minimum responsibilities:
-
-- Belongs to `administrations`.
-- Stores Octavo Piso external references when available.
-- Groups units and claims.
-
-### `apartments_or_units`
-
-Represents apartments, units, parking spaces, storage units, or other access-relevant managed units.
-
-Minimum responsibilities:
-
-- Belongs to `administrations` and usually to `buildings`.
-- Stores canonical unit labels and Octavo Piso external references.
-- Provides the main visibility boundary for owner portal access.
-
-### `persons`
-
-Represents humans or organizations that can own, rent, occupy, report, or receive communications.
-
-Minimum responsibilities:
-
-- Belongs to `administrations`.
-- Stores canonical identity fields and Octavo Piso external references.
-- Does not store channel-specific operational workflow state from Chatwoot.
-
-### `contact_points`
-
-Represents emails, phone numbers, and WhatsApp-capable phone numbers associated with persons.
-
-Minimum responsibilities:
-
-- Belongs to `administrations` and a `person`.
-- Stores normalized identifiers for deterministic matching.
-- Tracks verification and portal authorization state.
-- Supports shared WhatsApp numbers by not assuming one phone number always maps to one active person in all contexts.
-
-### `person_unit_relationships`
-
-Represents access-relevant relationships between persons and units.
-
-Minimum responsibilities:
-
-- Belongs to `administrations`.
-- Links `persons` to `apartments_or_units`.
-- Stores relationship role such as owner, tenant, occupant, administrator, or authorized representative.
-- Drives owner portal visibility rules.
-
-### `portal_accounts`
-
-Represents portal login eligibility and preferences for canonical persons.
-
-Minimum responsibilities:
-
-- Belongs to `administrations` and `persons`.
-- Supports OTP or magic-link login through authorized `contact_points`.
-- Does not authenticate against Chatwoot.
-
-### `portal_sessions`
-
-Represents authenticated portal sessions.
-
-Minimum responsibilities:
-
-- Belongs to `administrations`, `portal_accounts`, and `persons`.
-- Stores session lifecycle metadata and expiry.
-- Stores enough context to evaluate unit-scoped access without exposing Chatwoot internals.
-
-### `claims`
-
-Represents canonical tickets/claims.
-
-Minimum responsibilities:
-
-- Belongs to `administrations` and usually to a building/unit.
-- Stores canonical public ticket number, owner-visible status, claim category, reporter context, and lifecycle timestamps.
-- Remains canonical even when Chatwoot conversation creation or synchronization fails.
-- Stores sensitive-state flags when claims require manual handling.
-
-### `claim_messages`
-
-Represents canonical messages associated with claims.
-
-Minimum responsibilities:
-
-- Belongs to `administrations` and `claims`.
-- Stores channel-neutral message content and direction.
-- Stores owner-visible filtering state.
-- Excludes Chatwoot internal notes from owner-visible projections.
-- Uses stable external message references for idempotent webhook processing.
-
-### `claim_channel_links`
-
-Minimal, future-ready mapping between canonical claims and external channel objects.
-
-Minimum responsibilities:
-
-- Belongs to `administrations` and `claims`.
-- Stores provider type such as `chatwoot`, `jelou_future`, or `meta_cloud_future`.
-- Stores external IDs such as Chatwoot conversation IDs and message/thread references.
-- Keeps Chatwoot IDs as external references only; they never become canonical claim IDs.
-- Allows future WhatsApp provider migration without changing canonical claim ownership.
-
-### `claim_attachments`
-
-Represents attachments associated with claims and messages.
-
-Minimum responsibilities:
-
-- Belongs to `administrations`, `claims`, and optionally `claim_messages`.
-- Stores safe file metadata, storage references, visibility, and source channel.
-- Supports owner-visible attachments and PDF visibility in the portal.
-- Prevents raw internal Chatwoot-only artifacts from being exposed by default.
-
-### `conversation_sessions`
-
-Represents short-lived channel context, especially for shared WhatsApp numbers and deterministic menu flows.
-
-Minimum responsibilities:
-
-- Belongs to `administrations`.
-- Stores provider, external conversation/contact references, normalized channel identifier, and `active_person_context` when known.
-- Has a TTL/expiry so stale identity context is not reused indefinitely.
-- Requires explicit user selection when a shared phone number maps to multiple possible persons for sensitive actions.
-
-### `webhook_events`
-
-Stores raw inbound webhook envelopes for observability and idempotency.
-
-Minimum responsibilities:
-
-- Belongs to `administrations` when resolvable.
-- Stores provider, event type, external event ID, received timestamp, payload hash, processing status, and error summary.
-- Enables replay/debugging without introducing Kafka or event-streaming infrastructure.
-
-### `integration_logs`
-
-Stores lightweight integration diagnostics for Octavo Piso, Chatwoot, WhatsApp provider adapters, and future integrations.
-
-Minimum responsibilities:
-
-- Belongs to `administrations`.
-- Stores integration name, operation, request/response metadata, result, duration, and error summary.
-- Prioritizes operational debugging over advanced analytics.
-
-### `sync_outbox`
-
-Stores retryable synchronization tasks for simple eventual consistency.
-
-Minimum responsibilities:
-
-- Belongs to `administrations`.
-- Stores task type, target provider, target external reference, payload, idempotency key, status, retry count, next attempt time, and last error.
-- Implements persistence first, synchronization second.
-- Replaces Phase 1 needs for Kafka, event buses, BullMQ, or complex orchestration engines.
-
-### `audit_logs`
-
-Stores security- and business-relevant audit events.
-
-Minimum responsibilities:
-
-- Belongs to `administrations`.
-- Records actor type, actor ID, action, target table/entity, before/after summaries when appropriate, timestamp, and source channel.
-- Tracks sensitive actions, portal access, identity decisions, permission decisions, and AI-assisted recommendations.
-
-## Provider Abstraction
-
-WhatsApp provider support must remain future-ready without adding Phase 1 complexity.
-
-Required provider values:
-
-- `chatwoot` for the MVP path.
-- `jelou_future` as a reserved future adapter path.
-- `meta_cloud_future` as a reserved direct Meta Cloud API adapter path.
-
-Provider abstraction belongs in channel links, conversation sessions, webhook events, integration logs, and sync outbox tasks. The MVP should not create separate provider-specific canonical claim tables.
-
-## AI Compatibility Without Over-Modeling
-
-The MVP supports AI assist/copilot behavior, not AI autonomy. AI-related data should be captured through existing messages, audit logs, integration logs, and optional metadata fields only when needed.
+MVP AI is assistive/copilot only. The database should not introduce autonomous-agent tables, vector databases, RAG indexes, LangGraph state, long-term AI memory, or AI workflow engines.
 
 AI may:
 
@@ -704,25 +658,70 @@ AI may:
 - Classify claims.
 - Extract intent and entities.
 - Enrich operator context.
-- Suggest responses.
+- Suggest replies.
 - Prepare drafts.
-- Assist operators.
+- Assist human operators.
 
 AI must not:
 
-- Autonomously expose sensitive data.
-- Autonomously resolve legal or financial disputes.
-- Autonomously approve risky operations.
+- Autonomously expose private owner data.
+- Autonomously approve legal, financial, identity-sensitive, or operationally risky actions.
 - Autonomously close sensitive claims.
-- Hallucinate debt, payment, or account information.
+- Invent debt, payment, building, unit, or account information.
+- Treat chat history as authorization.
 
-AI responses must rely on verified tool outputs and deterministic Supabase data access. Any AI-visible context must respect the same identity, portal visibility, and sensitive-claim rules as human-facing surfaces.
+Future AI extensibility is preserved by clean canonical data, explicit audit logs, stable claim/message/attachment records, and provider-neutral channel links.
+
+## WhatsApp Provider Abstraction
+
+Chatwoot remains the MVP operational WhatsApp provider.
+
+Future provider abstraction is preserved through provider fields in `claim_channel_links`, `conversation_sessions`, `webhook_events`, `integration_logs`, and `sync_outbox`.
+
+Reserved provider values:
+
+- `chatwoot` for the MVP path.
+- `jelou_future` for a possible Jelou provider path.
+- `meta_cloud_future` for a possible direct Meta Cloud API provider path.
+- `vapi_future` for future voice workflows, outside Phase 1.
+
+Do not create provider-specific canonical claim tables in the MVP.
+
+## Explicit Phase 1 Non-Goals
+
+The Phase 1 MVP data model must not include:
+
+- VAPI implementation.
+- LangGraph.
+- Vector databases.
+- RAG systems.
+- Long-term AI memory.
+- Autonomous AI operations.
+- Autonomous sensitive claim closure.
+- Microservices.
+- Kafka.
+- Event buses.
+- BullMQ.
+- Complex workflow engines.
+- Advanced analytics tables.
+- Enterprise tenant hierarchies beyond `administrations` and `administration_id`.
 
 ## Implementation Notes
 
-- Use idempotency keys for webhook processing and sync outbox tasks.
-- Keep first schema slices small and tied to vertical flows.
-- Prefer nullable future-facing fields over new tables until a concrete Phase 1 flow requires them.
+- Do not generate SQL from this document without a separate implementation task.
+- Keep first schema slices tied to vertical MVP flows: identify person, identify unit, create claim, sync to Chatwoot, display claim in portal, attach files, audit access.
+- Prefer nullable future-facing fields over new tables until a concrete MVP flow requires additional structure.
 - Do not let the portal read Chatwoot directly.
 - Do not let Chatwoot conversation status become the canonical owner-visible status without explicit mapping.
-- Do not create advanced analytics tables in Phase 1; use logs and audit records first.
+- Use `webhook_events` for inbound debugging and replay analysis.
+- Use `integration_logs` for external API diagnostics and latency tracking.
+- Use `sync_outbox` for retryable eventual consistency.
+- Use `audit_logs` for private data access and security tracing.
+
+## Final MVP Philosophy
+
+The MVP should favor deterministic flows first, persistence before automation, and observability before autonomy.
+
+Human operators remain central in Phase 1. AI assists operators; it does not replace authorization, judgment, or sensitive decision-making.
+
+The architecture remains intentionally simple while preserving the extension points needed for future SaaS, AI, VAPI, Jelou, direct Meta Cloud API, and richer automation phases.
