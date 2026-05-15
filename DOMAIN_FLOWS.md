@@ -1,479 +1,371 @@
-# Domain Flows
+# DOMAIN_FLOWS.md
 
-This document defines the simplified MVP flows for WhatsApp, Chatwoot, Supabase, the owner portal, and Octavo Piso. The goal is not to redesign the platform; the goal is to reduce operational complexity, improve implementation success probability, preserve future extensibility, and reduce AI-assisted development risk.
+This document defines the final simplified MVP operational flows after architecture simplification.
 
-## Final MVP Architecture
+The MVP intentionally prioritizes deterministic flows, operational simplicity, auditability, observability, implementation velocity, and future extensibility. The goal is not enterprise orchestration. The goal is a realistic AI-assisted operational MVP.
 
-- Chatwoot is self-hosted on DigitalOcean and acts as the operational inbox and human workflow layer.
-- WhatsApp is connected through Chatwoot for the MVP.
-- Supabase is the canonical operational/business database.
-- Supabase Edge Functions are the preferred MVP orchestration/BFF layer for webhooks, permissions, deterministic automation, integrations, and portal APIs.
-- The Next.js owner portal is mandatory and reads filtered canonical projections from Supabase.
-- Octavo Piso remains the administrative source system for imported administration, building, unit, person, contact, and relationship data.
-- Deterministic WhatsApp flows come before AI automation.
-- AI is assistive/copilot-only in the MVP.
-- Observability is mandatory from day one through `webhook_events`, `integration_logs`, `sync_outbox`, and `audit_logs`.
+## 1. High-Level System Flow
 
-## Architectural Rules
+### System Roles
 
-- Canonical claim/ticket state lives in Supabase.
-- Chatwoot conversation IDs, contact IDs, inbox IDs, and message IDs are external references only.
-- Chatwoot internal notes and internal operator metadata must never be exposed directly to the owner portal.
-- The portal must never read directly from Chatwoot.
-- The portal must never read directly from Octavo Piso.
-- Edge Functions validate permissions and orchestrate integrations for the MVP.
-- A larger NestJS/backend layer remains a future migration option, not a Phase 1 dependency.
-- Core records include `administration_id` or `organization_id` from day one, while MVP operations remain effectively single-tenant.
-- Persistence happens before synchronization.
-- Synchronization failures are handled through `sync_outbox` retries and operator-visible logs, not Kafka, BullMQ, or workflow engines.
+- **Chatwoot** is the operational inbox. Operators use it to receive WhatsApp messages, manage conversations, reply to owners, add internal notes, and coordinate day-to-day service work.
+- **Supabase** is the canonical business state. Owner identity, normalized contact points, claims, claim visibility, session context, operational snapshots, audit records, webhook receipts, integration logs, and synchronization state are persisted there first.
+- **Supabase Edge Functions** are the orchestration layer. They receive webhooks, normalize input, enforce permissions, run deterministic menu flows, call integrations, write audit records, and enqueue retryable sync work.
+- **Next.js owner portal** is the owner-facing projection. It displays filtered, permission-checked views of canonical Supabase state and allows owners to create and follow claims.
+- **Octavo Piso** is the administrative source system. It remains authoritative for administration data such as buildings, units, owners, debts, coupons, and payment-related administrative records.
 
-## Explicitly Out of MVP
+### Flow Principles
 
-- VAPI/voice implementation.
-- AI autonomous financial actions.
-- Autonomous sensitive ticket closure.
-- LangGraph.
-- Vector databases and RAG systems.
-This document defines the simplified MVP domain flows for Chatwoot, WhatsApp, Supabase, the owner portal, Octavo Piso synchronization, and future extensibility. The goal is not to redesign the platform; it is to reduce operational complexity, harden the MVP, and preserve future AI/VAPI/Jelou paths.
+1. External events enter through Chatwoot, the portal, scheduled syncs, or explicit operator actions.
+2. Edge Functions persist the received event or command before attempting downstream synchronization.
+3. Supabase stores canonical operational state and operational snapshots.
+4. Chatwoot, portal screens, and outbound messages are updated from persisted state.
+5. Synchronization occurs after persistence and may be retried.
+6. Eventual consistency is acceptable when the system can show stale-data warnings, retry failures, and preserve auditability.
 
-## Architecture Principles
+### MVP Architecture Rules
 
-- Chatwoot is the operational inbox/workflow for human operators.
-- Chatwoot is self-hosted on DigitalOcean with a minimal operational setup, backups, and accessible logs.
-- Supabase is the canonical operational and business database.
-- Supabase Edge Functions are the preferred MVP orchestration/BFF layer for permissions, webhooks, deterministic automation, and integrations.
-- The owner portal is a mandatory filtered projection layer backed by Supabase.
-- Octavo Piso is the administrative source system.
-- WhatsApp is delivered through Chatwoot in the MVP.
-- WhatsApp provider abstraction remains future-ready for `chatwoot`, `jelou_future`, and `meta_cloud_future`.
-- Persistence happens before synchronization.
-- Observability is mandatory from day 1 through `webhook_events`, `integration_logs`, `sync_outbox`, and `audit_logs`.
-- Core entities include `administration_id` or `organization_id` from day 1, while the MVP remains effectively single-tenant operationally.
+- Persistence comes before synchronization.
+- Synchronization comes before optimization.
+- Failed downstream delivery must not erase the canonical business event.
+- The portal never reads directly from Chatwoot or Octavo Piso.
+- Chatwoot remains operational; Supabase remains canonical; Octavo Piso remains administrative.
+- Edge Functions keep orchestration simple and explicit for Phase 1.
 
-## Explicitly Out of MVP Flows
+## 2. WhatsApp Deterministic Menu Flows
 
-The MVP must not introduce flows for:
+Phase 1 WhatsApp flows are deterministic menu and webhook flows. They do not require autonomous AI reasoning for closed, rule-defined operations.
 
-- VAPI/voice execution.
-- AI autonomous financial actions.
-- Autonomous sensitive ticket closure.
-- LangGraph.
-- Vector databases or RAG systems.
-- Microservices.
-- Kafka/event streaming.
-- BullMQ/queue infrastructure.
-- Complex orchestration engines.
-- Aggressive SaaS multi-tenancy implementation.
-- Advanced analytics.
-- Long-term AI memory systems.
-- Long-term AI memory.
+### Standard Entry Flow
 
-## 1. Octavo Piso Synchronization Flow
+1. A WhatsApp message arrives in Chatwoot.
+2. Chatwoot sends an inbound webhook to an Edge Function.
+3. The Edge Function records the webhook receipt.
+4. The Edge Function normalizes the sender and message.
+5. The Edge Function resolves identity and active session context.
+6. The Edge Function presents or continues a deterministic menu.
+7. The Edge Function either completes the closed flow, creates a canonical record, or escalates to an operator.
+
+### Phase 1 Menu Options
+
+- **Request expense coupon**: verifies identity and apartment context, checks available administrative snapshot data, and returns a permitted coupon link, file, or stale-data message.
+- **Request debt balance**: verifies identity and apartment context, reads the latest permitted debt snapshot, and states freshness clearly.
+- **Create claim**: collects claim category, description, apartment/common-area context, attachments when available, and creates a canonical claim.
+- **Ask operator assistance**: routes the conversation to a human operator in Chatwoot with relevant context.
+- **Request payment proof**: verifies identity and apartment context, collects or retrieves permitted proof information, and escalates if the data is disputed or unavailable.
+- **Generic information**: provides non-sensitive information such as office hours, building contact channels, high-level process explanations, or portal access instructions.
+
+### Deterministic Flow Rules
+
+- Closed flows must prefer buttons, numbered options, and explicit confirmation prompts.
+- Sensitive flows require verified identity and selected apartment context.
+- Unknown or ambiguous identities may receive generic information only.
+- No autonomous AI reasoning is required to complete deterministic Phase 1 flows.
+- Any flow that cannot safely complete deterministically escalates to a human operator.
+
+## 3. Identity Resolution Flow
+
+Identity resolution protects private information and ensures that sensitive actions are tied to the correct person and apartment.
 
 ### Flow
 
-Octavo Piso → Edge Function sync job → Supabase canonical tables → `sync_outbox` provider tasks
+1. An incoming WhatsApp message arrives through Chatwoot.
+2. The Edge Function normalizes the contact point, including phone formatting, country code handling, and channel metadata.
+3. The normalized contact point is looked up in Supabase canonical identity records.
+4. The system checks whether the contact point maps to one verified person, multiple possible people, or no known person.
+5. The system checks whether there is an active session with a pinned `active_person_context` and valid TTL.
+6. If the person has access to multiple apartments, the system requests apartment selection before sensitive actions.
+7. If the number is ambiguous or shared, the system asks the user to select the correct person and apartment context.
+8. If identity cannot be verified, private data is denied by default.
+9. Generic information may still be shown to unknown or unverified users.
 
-1. An authorized Edge Function runs an explicit Octavo Piso synchronization.
-2. The function imports administrations, buildings, units, persons, contact points, and person-unit relationships.
-3. The function normalizes source records into canonical Supabase entities.
-4. The function upserts records using stable source identifiers and deterministic matching rules.
-5. The function writes `integration_logs` and `audit_logs` for sync activity and exceptions.
-6. Any required downstream Chatwoot projection is queued in `sync_outbox` after canonical persistence succeeds.
+### Access Rules
 
-### Rules
+- Private data requires verified access.
+- Sensitive actions require an explicit person and apartment context.
+- Unknown identities are denied by default for private information, balances, coupons, payment records, claim details, and owner-only documents.
+- AI must not infer or guess identity from conversational hints.
+- Operators may manually review ambiguous cases in Chatwoot and update canonical identity records only through approved operational procedures.
 
-- Octavo Piso is the administrative source system, but Supabase is the operational source of truth for claims, portal access, and normalized identity.
-- Sync must be idempotent and auditable.
-- Direct Octavo Piso access outside the orchestration layer is forbidden.
-- The portal never uses Octavo Piso directly for authorization, claim visibility, or ticket state.
-Octavo Piso → Supabase Edge Function sync → Supabase canonical entities → `sync_outbox` for downstream projection
+## 4. Shared Phone / Session Pinning
 
-1. An operator or scheduled job triggers the Octavo Piso sync Edge Function.
-2. The Edge Function reads administrative source data from Octavo Piso.
-3. The function normalizes administrations, buildings, units, persons, contact points, and person-unit relationships.
-4. The function upserts canonical Supabase records with stable Octavo Piso external references.
-5. The function writes `integration_logs` for success/failure details.
-6. The function writes `audit_logs` for sensitive or access-relevant changes.
-7. Any required Chatwoot projection is written as retryable work in `sync_outbox`.
-
-### Rules
-
-- Octavo Piso is an upstream administrative source, not the portal runtime database.
-- The portal must never read Octavo Piso directly.
-- Supabase becomes the canonical operational state after synchronization.
-- Sync must be idempotent, deterministic, and observable.
-- Downstream synchronization is secondary to persistence.
-
-## 2. Chatwoot Contact Projection Flow
+Shared WhatsApp numbers are expected in family, household, caretaker, and administrator scenarios. The MVP must support this without exposing private data incorrectly.
 
 ### Flow
 
-Supabase canonical contacts → `sync_outbox` → Edge Function worker → Chatwoot contacts
+1. A message arrives from a phone number associated with more than one person or apartment relationship.
+2. The deterministic menu asks who is using the number or which apartment the request concerns.
+3. The user selects the person and, when needed, the apartment.
+4. The system stores the selected `active_person_context` and apartment context for the conversation session.
+5. The session remains valid only until its TTL expires.
+6. The user may explicitly switch active person or apartment context.
+7. Sensitive actions restart context confirmation when the session is missing, expired, or inconsistent with the requested action.
 
-1. Supabase stores canonical persons and verified contact points.
-2. A sync task is added to `sync_outbox` when contact projection is needed.
-3. An Edge Function worker creates or updates Chatwoot contacts.
-4. Chatwoot IDs are stored as external references in minimal linking metadata.
-5. `integration_logs` record success, retryable failure, or permanent failure.
+### Auditability Requirements
 
-### Rules
+- Every context selection must be auditable.
+- Every context switch must record who or what was selected, the channel, the timestamp, and the triggering conversation.
+- Sensitive actions must be traceable to the active person and apartment context used at the time.
+- Session pinning is a convenience, not proof of permanent identity.
 
-- Chatwoot contacts are operational projections.
-- Supabase canonical contact data wins when systems disagree.
-- Chatwoot contact changes may create observations, but they do not automatically authorize portal access.
-- No distributed event bus is required for MVP contact sync.
+## 5. Claim / Ticket Lifecycle
 
-## 3. Deterministic WhatsApp Menu Flow
+Claims are canonical business records in Supabase. Chatwoot conversations are operational workspaces used to communicate and coordinate.
 
-### Flow
+### Creation Paths
 
-WhatsApp user → Chatwoot conversation → Chatwoot webhook → Edge Function → Supabase → deterministic response or operator escalation
+- **Portal-created claims**: an authenticated owner creates a claim from the portal, optionally adds attachments, and sees the claim immediately in their filtered view.
+- **WhatsApp-created claims**: a verified WhatsApp user completes a deterministic claim creation flow and the system creates a canonical claim.
+- **Operator-created claims**: an operator identifies a service issue in Chatwoot and creates or links a canonical claim from the operational conversation.
 
-1. A WhatsApp message enters Chatwoot.
-2. Chatwoot emits a webhook to a Supabase Edge Function.
-3. The function records the raw receipt in `webhook_events` before taking business action.
-4. The function normalizes the message and resolves the contact point when possible.
-5. The function checks for an active `conversation_sessions` record with a valid TTL.
-6. If the person/unit context is unambiguous, the function continues the deterministic menu flow.
-7. If the phone number is shared or identity is ambiguous, the function asks the user to select the relevant person/unit before sensitive actions.
-8. The function creates or updates canonical `claims`, `claim_messages`, and `claim_channel_links` as needed.
-9. Outbound replies or Chatwoot updates are persisted as `sync_outbox` tasks when external delivery is required.
-10. The flow escalates to an operator when rules cannot safely proceed.
+### Lifecycle Flow
 
-### Rules
+1. A claim is created in Supabase with source channel, requester, apartment or common-area context, category, description, visibility rules, and initial status.
+2. Any related Chatwoot conversation is linked as an operational reference.
+3. Attachments and messages are stored or referenced according to visibility and permission rules.
+4. The claim is enriched with deterministic metadata such as category, urgency, source, building, unit, and related administrative context.
+5. The claim is assigned to an operator or queue.
+6. Operators reply through Chatwoot or approved portal messaging paths.
+7. Owner-visible replies are synchronized into canonical claim messages.
+8. Internal Chatwoot notes remain internal and are never exposed in the portal.
+9. Owners see claim status, permitted messages, and permitted attachments in the portal.
+10. Operators may close claims after completing the necessary review.
+11. Owners or operators may reopen claims when new information appears or the issue persists.
 
-- Shared WhatsApp numbers are supported business reality.
-- `conversation_sessions` stores `active_person_context` and related unit context with TTL.
-- Ambiguous sensitive actions require explicit user selection.
-- Unknown identities are denied by default for sensitive information.
-- Deterministic menu behavior ships before AI-generated responses.
+### MVP Safety Rules
 
-## 4. Incoming Chatwoot Webhook Flow
+- No autonomous sensitive claim closure is allowed in the MVP.
+- AI may suggest closure language, but a human must approve sensitive closures.
+- Chatwoot status is not the canonical claim status unless explicitly synchronized through approved rules.
+- Owner visibility is filtered by identity, apartment relationship, claim visibility, and attachment visibility.
 
-### Flow
+## 6. Portal Flows
 
-Chatwoot webhook → `webhook_events` → idempotency check → canonical update → `sync_outbox` if needed
+The portal remains mandatory in the MVP. It is the owner-facing projection layer, not the source system.
 
-1. Chatwoot sends a webhook for conversation, message, contact, or status activity.
-2. The Edge Function stores the payload in `webhook_events` with provider, event type, and external event ID.
-3. The function checks idempotency before applying side effects.
-4. The function resolves the `claim_channel_links` record for known conversations.
-5. The function updates canonical `claims`, `claim_messages`, and attachments only when visibility and data rules allow it.
-6. The function logs processing outcomes in `integration_logs`.
-7. Retryable external follow-up work is placed in `sync_outbox`.
+### OTP Login
 
-### Rules
+1. The owner enters a phone number or email.
+2. The portal sends the login request to an Edge Function.
+3. The Edge Function normalizes the contact point.
+4. Supabase verifies that the contact point belongs to an eligible person with an active owner or authorized relationship.
+5. An OTP is sent through the configured delivery channel.
+6. The owner submits the OTP.
+7. The portal session is established for the verified person.
 
-- Webhook storage is mandatory for day-one debugging.
-- Owner-visible state is derived from Supabase rules, not raw Chatwoot status names.
-- Internal notes remain internal.
-- Failed webhook processing must be inspectable and retryable.
+### Owner Dashboard
 
-## 5. Portal OTP Login Flow
+- Shows apartments or relationships available to the authenticated person.
+- Shows claim summaries visible to that person.
+- Shows permitted debt, coupon, payment, or document snapshots when available.
+- Clearly labels stale or last-synced administrative data.
 
-### Flow
+### Claim Visibility and Creation
 
-Next.js portal → Edge Function → Supabase contact and relationship validation → OTP delivery → `portal_sessions`
+- Owners can create claims from the portal.
+- Owners can attach files or images when allowed.
+- Owners can see only their permitted claims and permitted messages.
+- Owners can reply to claims through approved message flows.
+- Owners can view PDFs only when identity, apartment relationship, document type, and visibility rules allow it.
 
-1. The owner enters an email or phone/WhatsApp identifier.
-2. The portal calls an Edge Function.
-3. The function normalizes the identifier and checks verified `contact_points`.
-4. The function confirms the person has an active portal-eligible relationship through `person_unit_relationships`.
-5. The function sends an OTP through the configured delivery path.
-6. After verification, the function creates `portal_sessions` scoped to the canonical person.
-7. Portal screens load only filtered canonical data from Supabase through secure APIs or policies.
+### Portal Rules
 
-### Rules
+- The portal reads filtered Supabase projections only.
+- The portal does not expose raw Chatwoot conversations.
+- The portal does not expose Chatwoot internal notes.
+- The portal does not query Octavo Piso directly.
+- Portal visibility is filtered by authenticated person, apartment relationship, document permissions, and claim visibility.
 
-- Portal login is mandatory for MVP.
-- Chatwoot authentication is not used for owners.
-- Observed-only contact points cannot authenticate.
-- Portal access is based on canonical identity and relationship data.
-Supabase canonical contacts → `sync_outbox` → Edge Function worker/retry → Chatwoot contacts
+## 7. AI Assist Flows
 
-1. Supabase stores canonical persons and contact points.
-2. A contact projection task is written to `sync_outbox`.
-3. A retry-capable Edge Function processes the task.
-4. Chatwoot contacts are created or updated as operational projections.
-5. Chatwoot external IDs are stored as external references only.
-6. Results and failures are recorded in `integration_logs`.
+AI is assistive and copilot-only in the MVP. Deterministic flows remain the default for closed operations.
 
-### Rules
+### AI May
 
-- Supabase canonical contact data wins over Chatwoot contact data.
-- Chatwoot contact IDs are external operational references, not canonical identities.
-- Projection failures must be retryable and visible.
-- No Kafka, event bus, BullMQ, or workflow engine is required for Phase 1.
+- Summarize long conversations for operators.
+- Classify claim category or urgency for review.
+- Extract structured intent from owner messages.
+- Suggest operator responses.
+- Enrich operator context with permission-checked summaries.
+- Prepare drafts for human approval.
+- Identify when a conversation should be escalated.
 
-## 3. Incoming WhatsApp Flow
-
-### Flow
-
-WhatsApp via Chatwoot → Chatwoot webhook → Edge Function → `webhook_events` → identity/session resolution → canonical claim/message update → optional `sync_outbox`
-
-1. A WhatsApp message arrives through Chatwoot.
-2. Chatwoot emits a webhook.
-3. The webhook Edge Function stores the raw envelope in `webhook_events` before business processing.
-4. The function normalizes the payload into a channel-neutral shape.
-5. The function checks `conversation_sessions` for active session context and TTL.
-6. The function resolves the sender through normalized `contact_points` and canonical person-unit relationships.
-7. If the number is shared or ambiguous, the user is asked to explicitly select the person/unit context before sensitive actions proceed.
-8. Deterministic menu handling creates or updates canonical `claims` and `claim_messages` when enough verified context exists.
-9. Ambiguous, unknown, risky, or sensitive cases are escalated to an operator in Chatwoot.
-10. Processing outcomes are recorded in `integration_logs` and, when relevant, `audit_logs`.
-
-### Rules
-
-- Deterministic WhatsApp menu flows come first.
-- Shared WhatsApp numbers are supported business reality.
-- `conversation_sessions` use TTL and an `active_person_context` when known.
-- Unknown identities are denied by default for sensitive actions.
-- AI must not guess identity, debt, payments, permissions, or unit access.
-- Chatwoot remains the operator workspace; Supabase remains canonical.
-
-## 4. Portal Login Flow
-
-### Flow
-
-Portal login request → Edge Function → canonical contact validation → OTP/magic link → `portal_sessions`
-
-1. A user enters an email address or phone/WhatsApp number.
-2. The portal calls the auth Edge Function.
-3. The function normalizes the identifier.
-4. The function validates the identifier against authorized canonical `contact_points`.
-5. The function sends an OTP or magic link through the appropriate delivery path.
-6. The user verifies the OTP or magic link.
-7. The function creates a `portal_sessions` record tied to the canonical person and allowed access context.
-8. The portal reads only filtered Supabase projections.
-
-### Rules
-
-- Portal login is mandatory in the MVP.
-- Chatwoot authentication is not used.
-- Observed or unknown contacts cannot authenticate until explicitly verified and authorized.
-- Session access is based on canonical identity and person-unit relationships.
-
-## 5. Portal Ticket Visibility Flow
-
-### Flow
-
-Portal session → Edge Function/RLS-safe projection → canonical claims/messages/attachments
-
-1. The portal requests visible claims for the authenticated session.
-2. The Edge Function validates `portal_sessions`.
-3. The function resolves authorized units through `person_unit_relationships`.
-4. The function returns owner-visible `claims`, `claim_messages`, and `claim_attachments` only.
-5. Internal Chatwoot notes, internal metadata, and non-owner-visible artifacts are excluded.
-6. PDF and attachment access is granted only through owner-visible attachment rules.
-
-### Rules
-
-- The portal must not read Chatwoot directly.
-- Portal-visible status is a safe canonical projection, not raw Chatwoot lifecycle state.
-- Visibility decisions must be deterministic, auditable, and explainable from Supabase records.
-- Owner-visible attachments and PDF visibility are mandatory MVP capabilities.
-
-## 6. Portal Ticket Visibility Flow
-
-### Flow
-
-Portal session → Edge Function/RLS-filtered query → canonical claims/messages/attachments
-
-1. The portal requests ticket lists, ticket details, messages, attachments, and PDFs.
-2. The request is scoped to the active portal session and canonical person.
-3. Visibility is derived from `person_unit_relationships`, claim unit context, claim participants, and explicit owner-visible flags.
-4. The portal displays safe `owner_visible_status` values and owner-visible messages only.
-5. Attachments and PDFs are shown only when `claim_attachments.owner_visible` is true and the user has claim visibility.
-
-### Rules
-
-- Ticket visibility, creation, replies, owner-visible attachments, and PDF visibility are required MVP portal capabilities.
-- Raw Chatwoot data is never exposed to the portal.
-- Internal Chatwoot notes are never exposed.
-- Unknown identities have no visibility until verified.
-Portal → Edge Function → `claims` → `claim_messages` → `claim_attachments` if present → `sync_outbox` → Chatwoot conversation
-
-1. An authenticated portal user creates a claim from an authorized unit context.
-2. The Edge Function validates the portal session, person, contact point, and unit access.
-3. The function creates the canonical `claims` record and public ticket number in Supabase.
-4. The function creates the initial `claim_messages` record.
-5. Any uploaded owner-visible files are stored and represented in `claim_attachments`.
-6. The function writes a Chatwoot conversation creation task to `sync_outbox`.
-7. A retry-capable worker creates or updates the Chatwoot conversation.
-8. The worker creates or updates a minimal `claim_channel_links` record for provider `chatwoot`.
-
-### Rules
-
-- The claim exists canonically even if Chatwoot creation fails temporarily.
-- Chatwoot conversation IDs remain external references.
-- The portal displays canonical Supabase state, not Chatwoot state.
-- Synchronization failures must be visible and retryable.
-
-## 7. Portal Ticket Creation and Reply Flow
-
-### Flow
-
-Portal → Edge Function → Supabase canonical write → `sync_outbox` Chatwoot task → portal projection
-
-1. A portal user creates a claim or replies to an existing visible claim.
-2. The Edge Function validates the session, person, unit, and claim visibility.
-3. The function writes the canonical `claims`, `claim_messages`, and `claim_attachments` records first.
-4. The function creates or updates `claim_channel_links` as needed.
-5. The function queues Chatwoot creation/reply work in `sync_outbox`.
-6. The portal immediately reads the canonical Supabase projection.
-7. If Chatwoot synchronization fails, the canonical claim remains visible and the failed task is retryable.
-
-### Rules
-
-- Persistence comes before Chatwoot synchronization.
-- Portal users should not lose submitted tickets because Chatwoot is temporarily unavailable.
-- Operators must be able to see sync failures and recover manually.
-
-## 8. Operator Escalation Flow
-
-### Flow
-
-Deterministic automation limit → Chatwoot operator workflow → webhook → Supabase projection
-
-1. Deterministic WhatsApp or portal automation detects ambiguity, unknown identity, sensitive content, or policy limits.
-2. The conversation is routed to human operators in Chatwoot.
-3. Operators use Chatwoot assignment, inboxes, notes, and replies.
-4. Chatwoot webhooks synchronize owner-visible operator replies back to canonical Supabase messages.
-5. Internal notes stay internal and are used only for operations.
-
-### Rules
-
-- Chatwoot remains the human operational workflow layer.
-- Supabase remains the canonical owner-visible projection.
-- Sensitive claims are not autonomously closed.
-Operator reply in Chatwoot → Chatwoot webhook → Edge Function → `webhook_events` → `claim_channel_links` → `claim_messages`
-
-1. An operator replies in Chatwoot.
-2. Chatwoot emits a webhook.
-3. The Edge Function persists the webhook in `webhook_events`.
-4. The function resolves the canonical claim through `claim_channel_links`.
-5. The function stores an owner-visible `claim_messages` record only when the message is safe to expose.
-6. Internal notes remain internal and are never exposed to the portal.
-7. Results are recorded in `integration_logs` and sensitive decisions in `audit_logs`.
-
-### Rules
-
-- Owner-visible filtering applies to every operator-originated message.
-- Internal Chatwoot notes must never appear in the portal.
-- Message synchronization must be idempotent using stable external message references.
-- Sensitive claim closure requires human/operator-controlled handling.
-
-## 8. Deterministic Automation and Operator Escalation Flow
-
-### Flow
-
-Inbound intent/menu step → deterministic rules → safe action or operator escalation
-
-1. The system evaluates the current message against known deterministic menu steps.
-2. The system checks session context, identity, unit access, claim sensitivity, and required data.
-3. If all required context is verified, the system performs the safe deterministic action.
-4. If anything is ambiguous or sensitive, the system escalates to an operator in Chatwoot.
-5. AI may prepare a summary, classification, or draft for the operator but cannot execute sensitive actions.
-
-### Rules
-
-- Deterministic flows are the default automation model.
-- Manual fallback must always be possible.
-- Unknown or ambiguous identities are denied by default for sensitive actions.
-- Logs/debugging are prioritized over advanced dashboards.
-
-## 9. AI Assist Flow
-
-### Flow
-
-Webhook or operator request → verified Supabase context → AI assist → operator-reviewed draft/context
-
-1. An Edge Function gathers verified claim, person, unit, message, and integration context from Supabase.
-2. AI may summarize, classify, extract intent/entities, enrich operator context, suggest responses, or prepare drafts.
-3. AI outputs are shown as assistive context or drafts for operator review.
-4. Any owner-visible response requires deterministic data access and policy-compliant delivery.
-5. AI usage and sensitive decisions are logged in `audit_logs` when relevant.
-
-### Rules
-
-- AI is assistive/copilot-only in MVP.
-- AI must not autonomously expose sensitive data.
-- AI must not resolve legal or financial disputes.
-- AI must not approve risky operations.
-- AI must not close sensitive claims.
-- AI must not hallucinate debt, balance, payment, or legal information.
-- AI responses must rely on verified tool outputs and deterministic data access.
-
-## 10. Future Provider Integration Points
-
-### Jelou Future Adapter
-
-- Preserve provider values and linking fields for a future `jelou_future` adapter.
-- Do not implement Jelou in MVP unless explicitly approved after the deterministic Chatwoot flow is stable.
-- A future adapter should reuse canonical claims, messages, contact points, conversation sessions, webhook logs, and sync outbox.
-
-### Meta Cloud Future Adapter
-
-- Preserve `meta_cloud_future` as a possible direct WhatsApp provider path.
-- Do not bypass the provider abstraction by hard-coding Chatwoot assumptions into canonical tables.
-
-### VAPI Future Integration Point
-
-- VAPI/voice is out of MVP.
-- Future voice calls can enter through the same pattern: provider webhook, `webhook_events`, deterministic identity resolution, canonical claim/message writes, and `sync_outbox`.
-- Do not add voice-specific tables until a real Phase 2 implementation requires them.
-Canonical data/tool output → AI assist → operator-visible suggestion/draft → human action if needed
-
-1. The system gathers verified canonical data and tool outputs.
-2. AI may summarize, classify, extract intent/entities, enrich operator context, suggest responses, or prepare drafts.
-3. AI output is shown as assistive context or a draft.
-4. Human operators approve, modify, or ignore AI suggestions.
-5. AI-assisted recommendations and sensitive uses are recorded in `audit_logs` when relevant.
-
-### Rules
-
-AI may:
-
-- Summarize.
-- Classify.
-- Extract intent/entities.
-- Enrich operator context.
-- Suggest responses.
-- Prepare drafts.
-- Assist operators.
-
-AI must not:
+### AI Must Not
 
 - Autonomously expose sensitive data.
-- Autonomously resolve legal or financial disputes.
+- Autonomously resolve legal disputes.
 - Autonomously approve risky operations.
+- Hallucinate balances, debts, payment status, coupon availability, or administrative facts.
 - Autonomously close sensitive claims.
-- Hallucinate debt/payment information.
+- Guess identity, ownership, apartment access, or relationship status.
 
-AI responses must rely on verified tool outputs and deterministic data access.
+### AI Access Rules
 
-## 10. Future Jelou Adapter Flow
+- AI uses permission-checked tools only.
+- AI never directly accesses Octavo Piso.
+- AI never directly accesses the database.
+- AI receives only scoped, filtered context prepared by Edge Functions or approved backend APIs.
+- AI output is treated as a draft or recommendation unless a deterministic rule explicitly allows a safe non-sensitive response.
 
-Jelou is not part of the MVP implementation. The future integration point is the provider abstraction used by `claim_channel_links`, `conversation_sessions`, `webhook_events`, `integration_logs`, and `sync_outbox`.
+## 8. Human Escalation Flows
 
-Future Jelou support must:
+Human fallback always exists. The MVP is operator-centric and must make escalation easy.
 
-- Preserve Supabase canonical claims and messages.
-- Preserve owner portal filtering.
-- Use provider value `jelou_future` or a deliberate later replacement.
-- Avoid bypassing identity, permission, audit, and visibility rules.
+### Escalation Triggers
 
-## 11. Future VAPI Integration Point
+- Ambiguous identity.
+- Shared phone context cannot be safely selected.
+- Payment disputes.
+- Legal claims or legal threats.
+- Angry, abusive, or distressed users.
+- Unknown ownership or unclear apartment relationship.
+- Confidence too low for classification or intent extraction.
+- Operator requested by the user.
+- Stale administrative data that affects a sensitive answer.
+- Missing attachment or unreadable proof.
+- Any deterministic flow reaches an unsupported branch.
 
-VAPI/voice is explicitly out of MVP. The future integration point is a channel adapter that normalizes calls/transcripts into the same canonical claim/message model.
+### Escalation Flow
 
-Future VAPI support must:
+1. The system stops the sensitive automated flow.
+2. The conversation remains or is assigned in Chatwoot.
+3. The operator receives available context, identity status, selected apartment context, recent messages, and reason for escalation.
+4. The operator replies, requests clarification, or updates canonical records through approved procedures.
+5. The final resolution is recorded in canonical state when it affects a claim or owner-visible record.
 
-- Preserve canonical Supabase claim ownership.
-- Treat transcripts and summaries as operational inputs until visibility rules permit exposure.
-- Use verified data access for AI summaries.
-- Never bypass identity matching, permissions, or owner-visible filtering.
+## 9. Octavo Piso Synchronization Flows
 
-Recommended next step:
-"Create the actual Supabase schema and Edge Function implementation plan."
+Octavo Piso remains authoritative for administrative source data. Supabase stores operational snapshots needed for fast, auditable owner service.
+
+### Daily Sync
+
+1. A scheduled Edge Function runs a daily synchronization.
+2. The function retrieves relevant administrative data from Octavo Piso.
+3. Supabase stores normalized operational snapshots and external references.
+4. The function records success, failures, counts, and timestamps in integration logs.
+5. Sensitive or access-relevant changes are auditable.
+
+### Webhook-Triggered or Operator-Triggered Refreshes
+
+- A specific owner, apartment, debt, coupon, payment, or document snapshot may be refreshed when a user requests it or an operator triggers it.
+- The refresh updates Supabase snapshots before the result is shown or sent.
+- If refresh fails, the system uses the last known snapshot only with a clear stale-data warning or escalates to an operator.
+
+### Stale Data Handling
+
+- Owner-facing financial or administrative data must show last-synced timing when relevant.
+- Stale snapshots are acceptable when clearly labeled and operationally useful.
+- If stale data could create financial, legal, or trust risk, the system escalates instead of pretending the data is current.
+
+### Authority Rules
+
+- Supabase stores operational snapshots only for Octavo-managed administrative data.
+- Octavo Piso remains authoritative for the underlying administrative facts.
+- Supabase remains authoritative for operational claims, sessions, audit records, and portal-facing workflow state.
+
+## 10. Chatwoot Synchronization Flows
+
+Chatwoot synchronization stays simple in Phase 1. The MVP does not need Kafka, an event bus, BullMQ, or a workflow engine.
+
+### Inbound Webhook Flow
+
+1. Chatwoot emits a webhook for an inbound message, outgoing message, conversation update, contact update, or assignment change.
+2. The Edge Function persists the raw webhook event before business processing.
+3. The function applies idempotency checks.
+4. The function maps Chatwoot external references to canonical Supabase records.
+5. The function updates claims, messages, attachments, or operational links when allowed.
+6. The function logs processing outcomes and errors.
+
+### Outbound Synchronization Flow
+
+1. Supabase persists the canonical business action first.
+2. The required Chatwoot or WhatsApp side effect is written as a `sync_outbox` task.
+3. A retry-capable Edge Function processes the outbox task.
+4. Success or failure is recorded in integration logs.
+5. Failed tasks remain inspectable and retryable.
+
+### Rules
+
+- Persistence-first is mandatory.
+- `sync_outbox` handles retryable external work.
+- Retries are preferred before introducing orchestration engines.
+- Chatwoot IDs are external operational references, not canonical identities.
+- Eventual consistency is acceptable when failures are visible and recoverable.
+
+## 11. Observability Flows
+
+Observability is mandatory from day 1. Debugging visibility is prioritized over polished dashboards.
+
+### Required Operational Records
+
+- **`webhook_events`**: stores inbound webhook receipts, provider names, event types, external IDs, raw payload references, idempotency status, and processing state.
+- **`integration_logs`**: stores integration attempts, request/response summaries, success/failure status, error messages, retry counts, and affected external systems.
+- **`sync_outbox`**: stores pending, successful, failed, and retryable outbound synchronization tasks.
+- **`audit_logs`**: stores security-relevant and business-relevant changes such as identity selections, context switches, permission-sensitive access, claim status changes, and operator actions.
+
+### Observability Flow
+
+1. Every inbound webhook is recorded before processing.
+2. Every external integration attempt is logged.
+3. Every retryable outbound task has a visible state.
+4. Every sensitive or permission-relevant action has an audit trail.
+5. Operators and developers can inspect what happened without reconstructing state from provider dashboards.
+
+### MVP Observability Rules
+
+- Debugging visibility is more important than advanced dashboards.
+- Logs must help answer: what happened, when, for whom, through which channel, and what failed.
+- Silent failure is not acceptable.
+- Auditability is part of the product, not an afterthought.
+
+## 12. Future Expansion Points
+
+The architecture intentionally preserves future extensibility while deferring complexity.
+
+### Future-Ready Integration Points
+
+- **VAPI**: voice intake, outbound calls, and AI-assisted call summaries can later use the same identity, claim, audit, and permission boundaries.
+- **Jelou**: alternative or complementary WhatsApp automation can later integrate through the same canonical persistence and synchronization patterns.
+- **Stronger AI agents**: future agents can operate with stricter tool permissions, richer context, and human approval workflows.
+- **Richer automation**: more deterministic workflows can be added after Phase 1 proves operational reliability.
+- **SaaS evolution**: administration and organization boundaries can mature into stronger multi-tenant capabilities when the product requires it.
+
+### Expansion Rules
+
+- Future systems integrate through canonical persistence and audited tools.
+- Future complexity must not bypass identity, visibility, or audit controls.
+- The MVP defers orchestration complexity intentionally, not accidentally.
+
+## 13. Explicit Phase 1 Non-Goals
+
+Phase 1 explicitly excludes:
+
+- VAPI implementation.
+- LangGraph.
+- Vector databases.
+- RAG.
+- Kafka.
+- BullMQ.
+- Microservices.
+- Autonomous financial actions.
+- Autonomous legal decisions.
+- Advanced workflow engines.
+- Aggressive multi-tenant orchestration.
+- Direct AI access to Octavo Piso.
+- Direct AI access to the database.
+- Autonomous sensitive claim closure.
+- Enterprise-grade orchestration.
+
+## 14. Final MVP Philosophy
+
+The final MVP is intentionally operational, deterministic, and auditable.
+
+- Deterministic before autonomous.
+- Persistence before orchestration.
+- Observability before optimization.
+- Human operators before autonomous resolution.
+- AI assist before AI agency.
+- Owner visibility through filtered projections.
+- Extensibility without overengineering.
+
+This approach keeps the MVP realistic: Chatwoot handles operational communication, Supabase preserves canonical business state, Edge Functions coordinate simple workflows, the portal gives owners a trustworthy projection, Octavo Piso remains authoritative for administrative data, and AI helps humans without replacing critical judgment.
